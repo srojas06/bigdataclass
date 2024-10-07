@@ -1,7 +1,7 @@
 from datetime import datetime
 
 from pyspark.sql import SparkSession
-from pyspark.sql.functions import col, date_format, udf
+from pyspark.sql.functions import col, date_format, udf,lit
 from pyspark.sql.types import (DateType, IntegerType, FloatType, StructField,
                                StructType, TimestampType)
 
@@ -44,5 +44,14 @@ stats_df = \
         col('date'),
         col('sum(amount)').alias('amount'))
 
-stats_df.printSchema()
-stats_df.show()
+# Define conversion rates for EUR and CRC
+eur_rate = 0.9  # USD to EUR conversion rate
+crc_rate = 600  # USD to CRC conversion rate
+
+# Add columns for currency conversion
+stats_with_conversion = stats_df \
+    .withColumn('amount_in_eur', col('amount') * lit(eur_rate)) \
+    .withColumn('amount_in_crc', col('amount') * lit(crc_rate))
+
+stats_with_conversion.printSchema()
+stats_with_conversion.show()
