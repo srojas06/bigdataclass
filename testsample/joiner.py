@@ -1,5 +1,4 @@
 """Toy join function to showcase spark functions."""
-
 def join_dataframes(left, right, columns_left, columns_right):
     column_expressions = []
     for i in range(len(columns_left)):
