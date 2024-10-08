@@ -1,4 +1,5 @@
-from .joiner import join_dataframes  
+from joiner import join_dataframes
+
 
 # 1. Unión correcta de datos de ciclistas, rutas y actividades
 def test_union_correcta(spark_session):
