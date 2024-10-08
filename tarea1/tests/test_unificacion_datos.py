@@ -150,14 +150,14 @@ def test_fechas_faltantes(spark_session):
     
     assert df_resultado.filter(df_resultado.Fecha.isNull()).count() == 1
 
-# 8. Unión correcta de rutas sin actividades asociadas
+# 8. Unión correcta de rutas sin actividades asociadas,este test verifica que las rutas sin actividades (en este caso, la "Ruta Surqui") aparezca en el conjunto de datos final.
 def test_rutas_sin_actividades(spark_session):
     df_ciclistas = spark_session.createDataFrame(
         [(118090887, 'Juan Perez', 'San José')],
         ['Cedula', 'Nombre', 'Provincia']
     )
     df_rutas = spark_session.createDataFrame(
-        [(1, 'Ventolera Escazú', 10), (2, 'Ruta Fantasma', 7)],
+        [(1, 'Ventolera Escazú', 10), (2, 'Ruta Surqui', 7)],
         ['Codigo_Ruta', 'Nombre_Ruta', 'Kilometros']
     )
     df_actividades = spark_session.createDataFrame(
@@ -169,7 +169,7 @@ def test_rutas_sin_actividades(spark_session):
     
     assert df_resultado.filter(df_resultado.Codigo_Ruta == 2).count() == 1
 
-# 9. Ciclistas que nunca hicieron actividad deben aparecer en el conjunto de datos final
+# 9. Verificar que ciclistas que no hicieron ninguna actividad aparezcan en el conjunto de datos
 def test_ciclistas_sin_actividad_ninguna(spark_session):
     df_ciclistas = spark_session.createDataFrame(
         [(118090887, 'Juan Perez', 'San José'), (123456789, 'Maria Lopez', 'Heredia')],
@@ -179,12 +179,19 @@ def test_ciclistas_sin_actividad_ninguna(spark_session):
         [(1, 'Ventolera Escazú', 10)],
         ['Codigo_Ruta', 'Nombre_Ruta', 'Kilometros']
     )
-    df_actividades = spark_session.createDataFrame([], ['Codigo_Ruta', 'Cedula', 'Fecha'])
+    # Aqui no tenemos actividades, lo que significa que ningun ciclista ha hecho ninguna actividad.
+    df_actividades = spark_session.createDataFrame([], ['Codigo_Ruta', 'Cedula', 'Fecha'])  # Sin actividades
     
     df_resultado = unir_datos(df_ciclistas, df_rutas, df_actividades)
     
-    assert df_resultado.filter(df_resultado.Cedula == 123456789).count() == 1
+    # Verificamos que ambos ciclistas (Juan Perez y Maria Lopez) aparezcan en el conjunto de datos final
+    assert df_resultado.filter(df_resultado.Cedula == 118090887).count() == 1  # Juan Perez no tiene actividad
+    assert df_resultado.filter(df_resultado.Cedula == 123456789).count() == 1  # Maria Lopez no tiene actividad
+    
+    # Verificamos que ambos ciclistas tienen columnas nulas para las actividades
+    assert df_resultado.filter(df_resultado.Cedula == 118090887).select('Codigo_Ruta').collect()[0][0] is None
     assert df_resultado.filter(df_resultado.Cedula == 123456789).select('Codigo_Ruta').collect()[0][0] is None
+
 
 # 10. Verificación de la unión de ciclistas con múltiples actividades en diferentes días
 def test_ciclistas_multiples_actividades_dias(spark_session):
