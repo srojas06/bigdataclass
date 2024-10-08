@@ -1,4 +1,14 @@
 from joiner import join_dataframes
+import pytest
+from pyspark.sql import SparkSession
+
+@pytest.fixture(scope="session")
+def spark_session():
+    return SparkSession.builder \
+        .appName("TestSession") \
+        .master("local[*]") \
+        .getOrCreate()
+
 
 
 # 1. Unión correcta de datos de ciclistas, rutas y actividades
