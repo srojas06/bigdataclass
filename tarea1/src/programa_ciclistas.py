@@ -8,11 +8,11 @@ spark = SparkSession.builder.appName("Ciclistas_Top5").getOrCreate()
 
 # Carga los CSV 
 def carga_datos():
-    df_ciclistas = spark.read.csv('bigdataclass/tarea1/data/ciclista.csv', header=False, inferSchema=True)\
+    df_ciclistas = spark.read.csv('./bigdataclass/tarea1/data/ciclista.csv', header=False, inferSchema=True)\
         .toDF('Cedula', 'Nombre', 'Provincia')
-    df_rutas = spark.read.csv('bigdataclass/tarea1/data/ruta.csv', header=False, inferSchema=True)\
+    df_rutas = spark.read.csv('./bigdataclass/tarea1/data/ruta.csv', header=False, inferSchema=True)\
         .toDF('Codigo_Ruta', 'Nombre_Ruta', 'Kilometros')
-    df_actividades = spark.read.csv('bigdataclass/tarea1/data/actividad.csv', header=False, inferSchema=True)\
+    df_actividades = spark.read.csv('./bigdataclass/tarea1/data/actividad.csv', header=False, inferSchema=True)\
         .toDF('Codigo_Ruta', 'Cedula', 'Fecha')
     return df_ciclistas, df_rutas, df_actividades
 
