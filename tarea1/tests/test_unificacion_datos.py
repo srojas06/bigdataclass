@@ -189,7 +189,8 @@ def test_rutas_sin_actividades(spark_session):
 
     assert sorted(actual_rows, key=lambda x: x['Cedula']) == sorted(expected_rows, key=lambda x: x['Cedula'])
 
-#5 Este test verifica que las actividades en rutas distintas el mismo día se mantengan separadas en el resultado.
+#5 Test de ciclistas con actividades en diferentes rutas el mismo día:
+#Este test verifica que las actividades en rutas distintas el mismo día se mantengan separadas en el resultado.
 def test_ciclistas_actividades_diferentes_rutas_mismo_dia(spark_session):
     # Datos de ciclistas
     df_ciclistas = spark_session.createDataFrame(
@@ -233,7 +234,8 @@ def test_ciclistas_actividades_diferentes_rutas_mismo_dia(spark_session):
     assert sorted(actual_rows, key=lambda x: x['Cedula']) == sorted(expected_rows, key=lambda x: x['Cedula'])
 
 
-#6 Este test verifica que las actividades en días diferentes en la misma ruta se manejen como actividades separadas. 
+#6 Test de ciclistas con actividades en días diferentes en la misma ruta:
+#Este test verifica que las actividades en días diferentes en la misma ruta se manejen como actividades separadas. 
 def test_ciclistas_actividades_diferentes_dias_misma_ruta(spark_session):
     # Datos de ciclistas
     df_ciclistas = spark_session.createDataFrame(
@@ -276,63 +278,45 @@ def test_ciclistas_actividades_diferentes_dias_misma_ruta(spark_session):
 
     assert sorted(actual_rows, key=lambda x: x['Cedula']) == sorted(expected_rows, key=lambda x: x['Cedula'])
 
-#7 Test de rutas sin actividades:
-#Este test verifica que las rutas sin actividades asignadas se manejen correctamente, con valores nulos para las actividades.
-def test_rutas_sin_actividades(spark_session):
+#7 Test de ciclistas que realizaron actividades sin información de ruta:
+#Este test verificxa que los ciclistas que realizaron actividades pero no tienen una ruta asignada (por alguna razón no se registró la ruta) se muestren correctamente con valores nulos en los campos de ruta.
+def test_ciclistas_sin_ruta(spark_session):
     # Datos de ciclistas
     df_ciclistas = spark_session.createDataFrame(
         [(118090887, 'Juan Perez', 'San José')],
         ['Cedula', 'Nombre', 'Provincia']
     )
 
-    # Datos de rutas
+    # Datos de actividades, pero sin rutas asignadas
+    df_actividades = spark_session.createDataFrame(
+        [(None, 118090887, '2024-10-01')],
+        ['Codigo_Ruta', 'Cedula', 'Fecha']
+    )
+
+    # Datos de rutas (vacío o sin la ruta relacionada con la actividad)
     df_rutas = spark_session.createDataFrame(
-        [(1, 'Ventolera Escazú', 10.0), (2, 'Ruta Cartago', 15.0)],
+        [],
         ['Codigo_Ruta', 'Nombre_Ruta', 'Kilometros']
     )
 
- 
-    schema_actividades = StructType([
-        StructField("Codigo_Ruta", IntegerType(), True),
-        StructField("Cedula", IntegerType(), True),
-        StructField("Fecha", StringType(), True)
-    ])
-    
-    # DataFrame vacío 
-    df_actividades = spark_session.createDataFrame([], schema_actividades)
-
-    # Unión de ciclistas con actividades (se usa un left join para mantener los ciclistas aunque no tengan actividades)
+    # Unir ciclistas con actividades (aunque no haya ruta)
     actual_ds = df_ciclistas.join(df_actividades, on="Cedula", how="left")
-
-    # Unión con las rutas (se usa left join para mantener las actividades sin rutas)
     actual_ds = actual_ds.join(df_rutas, on="Codigo_Ruta", how="left")
 
-    # Datos esperados (ciclista sin actividad ni ruta)
-    expected_data = [
-        (118090887, 'Juan Perez', 'San José', None, None, None, None)
-    ]
-    
-    expected_schema = StructType([
-        StructField("Cedula", IntegerType(), True),
-        StructField("Nombre", StringType(), True),
-        StructField("Provincia", StringType(), True),
-        StructField("Codigo_Ruta", IntegerType(), True),
-        StructField("Nombre_Ruta", StringType(), True),
-        StructField("Kilometros", DoubleType(), True),
-        StructField("Fecha", StringType(), True),
-    ])
-    
-    expected_ds = spark_session.createDataFrame(expected_data, expected_schema)
 
- 
+    expected_ds = spark_session.createDataFrame(
+        [(118090887, 'Juan Perez', 'San José', None, None, None, '2024-10-01')],
+        ['Cedula', 'Nombre', 'Provincia', 'Codigo_Ruta', 'Nombre_Ruta', 'Kilometros', 'Fecha']
+    )
+
     actual_rows = [row.asDict() for row in actual_ds.collect()]
     expected_rows = [row.asDict() for row in expected_ds.collect()]
-
 
     print("Actual Rows:", sorted(actual_rows, key=lambda x: x['Cedula']))
     print("Expected Rows:", sorted(expected_rows, key=lambda x: x['Cedula']))
 
     assert sorted(actual_rows, key=lambda x: x['Cedula']) == sorted(expected_rows, key=lambda x: x['Cedula'])
+
 
 #8 Test de ciclistas sin actividad en un periodo específico
 #Verifica que los ciclistas que no han completado ninguna actividad en un periodo de tiempo dado (por ejemplo, el año 2024) se reflejen sin datos de actividades ni rutas para ese periodo.
