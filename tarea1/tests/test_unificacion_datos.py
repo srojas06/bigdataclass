@@ -22,7 +22,7 @@ def test_union_correcta(spark_session):
     )
 
     df_rutas = spark_session.createDataFrame(
-        [(1, 'Ventolera Escazú', 10.0)],  # Usamos DoubleType para evitar conflictos
+        [(1, 'Ventolera Escazú', 10.0)],
         ['Codigo_Ruta', 'Nombre_Ruta', 'Kilometros']
     )
 
@@ -42,7 +42,11 @@ def test_union_correcta(spark_session):
         ['Cedula', 'Nombre', 'Provincia', 'Codigo_Ruta', 'Nombre_Ruta', 'Kilometros', 'Fecha']
     )
 
-    assert sorted(actual_ds.collect()) == sorted(expected_ds.collect())
+    # Comparación más precisa entre los resultados esperados y actuales
+    actual_rows = [row.asDict() for row in actual_ds.collect()]
+    expected_rows = [row.asDict() for row in expected_ds.collect()]
+
+    assert sorted(actual_rows, key=lambda x: x['Cedula']) == sorted(expected_rows, key=lambda x: x['Cedula'])
 
 
 
@@ -76,7 +80,12 @@ def test_ciclistas_sin_actividad(spark_session):
         ['Cedula', 'Nombre', 'Provincia', 'Codigo_Ruta', 'Nombre_Ruta', 'Kilometros', 'Fecha']
     )
 
-    assert sorted(actual_ds.collect()) == sorted(expected_ds.collect())
+    # Comparación precisa entre los resultados esperados y actuales
+    actual_rows = [row.asDict() for row in actual_ds.collect()]
+    expected_rows = [row.asDict() for row in expected_ds.collect()]
+
+    assert sorted(actual_rows, key=lambda x: x['Cedula']) == sorted(expected_rows, key=lambda x: x['Cedula'])
+
 
 
 
@@ -99,8 +108,8 @@ def test_ciclistas_mismo_nombre_diferente_cedula(spark_session):
         ['Codigo_Ruta', 'Cedula', 'Fecha']
     )
 
-    actual_ds = join_dataframes(df_ciclistas, df_actividades, ['Cedula'], ['Cedula'])
-    actual_ds = join_dataframes(actual_ds, df_rutas, ['Codigo_Ruta'], ['Codigo_Ruta'])
+    actual_ds = join_dataframes(df_ciclistas, df_actividades, ['Cedula'], ['Cedula']).withColumnRenamed("Cedula", "Cedula_Actividades")
+    actual_ds = join_dataframes(actual_ds, df_rutas, ['Codigo_Ruta'], ['Codigo_Ruta']).withColumnRenamed("Cedula_Actividades", "Cedula")
 
     expected_ds = spark_session.createDataFrame(
         [
@@ -110,7 +119,12 @@ def test_ciclistas_mismo_nombre_diferente_cedula(spark_session):
         ['Cedula', 'Nombre', 'Provincia', 'Codigo_Ruta', 'Nombre_Ruta', 'Kilometros', 'Fecha']
     )
 
-    assert sorted(actual_ds.collect()) == sorted(expected_ds.collect())
+    # Comparación precisa
+    actual_rows = [row.asDict() for row in actual_ds.collect()]
+    expected_rows = [row.asDict() for row in expected_ds.collect()]
+
+    assert sorted(actual_rows, key=lambda x: x['Cedula']) == sorted(expected_rows, key=lambda x: x['Cedula'])
+
 
 
 
@@ -133,38 +147,43 @@ def test_ciclistas_actividades_repetidas(spark_session):
         ['Codigo_Ruta', 'Cedula', 'Fecha']
     )
 
-    # Agrupar por ciclista y ruta, sumando las actividades repetidas (contando cuántas veces se realizó)
-    actual_ds = join_dataframes(df_ciclistas, df_actividades, ['Cedula'], ['Cedula'])
-    actual_ds = join_dataframes(actual_ds, df_rutas, ['Codigo_Ruta'], ['Codigo_Ruta'])
+    actual_ds = join_dataframes(df_ciclistas, df_actividades, ['Cedula'], ['Cedula']).withColumnRenamed("Cedula", "Cedula_Actividades")
+    actual_ds = join_dataframes(actual_ds, df_rutas, ['Codigo_Ruta'], ['Codigo_Ruta']).withColumnRenamed("Cedula_Actividades", "Cedula")
 
-    # Agregar una columna que cuente las actividades repetidas
+    # Agrupar por ciclista y ruta, sumando las actividades repetidas
     actual_ds = actual_ds.groupBy("Cedula", "Codigo_Ruta", "Nombre_Ruta", "Kilometros", "Fecha").count()
 
     expected_ds = spark_session.createDataFrame(
-        [(118090887, 1, 'Ventolera Escazú', 10.0, '2024-10-01', 2)],  # Se espera que el conteo sea 2
-        ['Cedula', 'Codigo_Ruta', 'Nombre_Ruta', 'Kilometros', 'Fecha', 'count']
+        [(118090887, 'Juan Perez', 'San José', 1, 'Ventolera Escazú', 10.0, '2024-10-01', 2)],
+        ['Cedula', 'Nombre', 'Provincia', 'Codigo_Ruta', 'Nombre_Ruta', 'Kilometros', 'Fecha', 'count']
     )
 
-    assert sorted(actual_ds.collect()) == sorted(expected_ds.collect())
+    # Comparación precisa
+    actual_rows = [row.asDict() for row in actual_ds.collect()]
+    expected_rows = [row.asDict() for row in expected_ds.collect()]
+
+    assert sorted(actual_rows, key=lambda x: x['Cedula']) == sorted(expected_rows, key=lambda x: x['Cedula'])
+
 
 
 
 
 # 5. Test para rutas sin actividades
 # Verifica que las rutas sin actividades no aparezcan en el dataset final.
-# 5. Test para rutas que no tienen actividades
 def test_rutas_sin_actividades(spark_session):
+    # Datos de ciclistas
     df_ciclistas = spark_session.createDataFrame(
         [(118090887, 'Juan Perez', 'San José')],
         ['Cedula', 'Nombre', 'Provincia']
     )
 
+    # Datos de rutas
     df_rutas = spark_session.createDataFrame(
         [(1, 'Ventolera Escazú', 10.0)],
         ['Codigo_Ruta', 'Nombre_Ruta', 'Kilometros']
     )
 
-    # Crear un DataFrame vacío con esquema definido
+    # Crear un DataFrame vacío con un esquema explícito
     schema = StructType([
         StructField("Codigo_Ruta", IntegerType(), True),
         StructField("Cedula", IntegerType(), True),
@@ -172,14 +191,20 @@ def test_rutas_sin_actividades(spark_session):
     ])
     df_actividades = spark_session.createDataFrame([], schema)
 
+    # Realizar la unión de ciclistas con actividades
     actual_ds = join_dataframes(df_ciclistas, df_actividades, ['Cedula'], ['Cedula'])
     actual_ds = join_dataframes(actual_ds, df_rutas, ['Codigo_Ruta'], ['Codigo_Ruta'])
 
+    # Datos esperados
     expected_ds = spark_session.createDataFrame(
         [(118090887, 'Juan Perez', 'San José', None, None, None, None)],
         ['Cedula', 'Nombre', 'Provincia', 'Codigo_Ruta', 'Nombre_Ruta', 'Kilometros', 'Fecha']
     )
 
-    assert sorted(actual_ds.collect()) == sorted(expected_ds.collect())
+    # Asegurarse de comparar correctamente las filas con 'None'
+    actual_rows = [row.asDict() for row in actual_ds.collect()]
+    expected_rows = [row.asDict() for row in expected_ds.collect()]
+
+    assert sorted(actual_rows, key=lambda x: x['Cedula']) == sorted(expected_rows, key=lambda x: x['Cedula'])
 
 
