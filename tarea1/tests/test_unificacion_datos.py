@@ -140,24 +140,41 @@ def test_rutas_sin_actividades(spark_session):
         ['Codigo_Ruta', 'Nombre_Ruta', 'Kilometros']
     )
 
-    # Crear un DataFrame vacío con un esquema explícito
-    schema = StructType([
+    # Crear un DataFrame vacío con un esquema explícito para las actividades
+    schema_actividades = StructType([
         StructField("Codigo_Ruta", IntegerType(), True),
         StructField("Cedula", IntegerType(), True),
         StructField("Fecha", StringType(), True)
     ])
-    df_actividades = spark_session.createDataFrame([], schema)
+    
+    # El DataFrame vacío con el esquema explícito
+    df_actividades = spark_session.createDataFrame([], schema_actividades)
 
-    # Unión de ciclistas con actividades
-    actual_ds = df_ciclistas.join(df_actividades, on="Cedula", how="left").select(df_ciclistas["*"], df_actividades["Codigo_Ruta"], df_actividades["Fecha"])
+    # Unión de ciclistas con actividades (left join para mantener los ciclistas aunque no tengan actividades)
+    actual_ds = df_ciclistas.join(df_actividades, on="Cedula", how="left")
+
+    # Unión con las rutas (left join para mantener las actividades sin rutas)
     actual_ds = actual_ds.join(df_rutas, on="Codigo_Ruta", how="left")
 
-    # Datos esperados
-    expected_ds = spark_session.createDataFrame(
-        [(118090887, 'Juan Perez', 'San José', None, None, None, None)],
-        ['Cedula', 'Nombre', 'Provincia', 'Codigo_Ruta', 'Nombre_Ruta', 'Kilometros', 'Fecha']
-    )
+    # Datos esperados (ciclista sin actividad ni ruta)
+    expected_data = [
+        (118090887, 'Juan Perez', 'San José', None, None, None, None)
+    ]
+    
+    # Crear DataFrame esperado
+    expected_schema = StructType([
+        StructField("Cedula", IntegerType(), True),
+        StructField("Nombre", StringType(), True),
+        StructField("Provincia", StringType(), True),
+        StructField("Codigo_Ruta", IntegerType(), True),
+        StructField("Nombre_Ruta", StringType(), True),
+        StructField("Kilometros", DoubleType(), True),
+        StructField("Fecha", StringType(), True),
+    ])
+    
+    expected_ds = spark_session.createDataFrame(expected_data, expected_schema)
 
+    # Comparación de resultados
     actual_rows = [row.asDict() for row in actual_ds.collect()]
     expected_rows = [row.asDict() for row in expected_ds.collect()]
 
@@ -165,6 +182,7 @@ def test_rutas_sin_actividades(spark_session):
     print("Expected Rows:", sorted(expected_rows, key=lambda x: x['Cedula']))
 
     assert sorted(actual_rows, key=lambda x: x['Cedula']) == sorted(expected_rows, key=lambda x: x['Cedula'])
+
 
 
 
