@@ -108,10 +108,7 @@ def test_ciclistas_actividades_repetidas(spark_session):
     actual_ds = df_ciclistas.join(df_actividades, on="Cedula", how="outer")
     actual_ds = actual_ds.join(df_rutas, on="Codigo_Ruta", how="left")
 
-    # Eliminar duplicados antes de agrupar
-    actual_ds = actual_ds.dropDuplicates(['Cedula', 'Codigo_Ruta', 'Fecha'])
-
-    # Agrupar por ciclista y ruta
+    # Agrupar por ciclista y ruta, contando las actividades repetidas
     actual_ds = actual_ds.groupBy("Cedula", "Codigo_Ruta", "Nombre_Ruta", "Kilometros", "Fecha").count()
 
     expected_ds = spark_session.createDataFrame(
@@ -126,6 +123,7 @@ def test_ciclistas_actividades_repetidas(spark_session):
     print("Expected Rows:", sorted(expected_rows, key=lambda x: x['Cedula']))
 
     assert sorted(actual_rows, key=lambda x: x['Cedula']) == sorted(expected_rows, key=lambda x: x['Cedula'])
+
 
 
 #4
@@ -151,7 +149,7 @@ def test_rutas_sin_actividades(spark_session):
     df_actividades = spark_session.createDataFrame([], schema)
 
     # Unión de ciclistas con actividades
-    actual_ds = df_ciclistas.join(df_actividades, on="Cedula", how="left")
+    actual_ds = df_ciclistas.join(df_actividades, on="Cedula", how="left").select(df_ciclistas["*"], df_actividades["Codigo_Ruta"], df_actividades["Fecha"])
     actual_ds = actual_ds.join(df_rutas, on="Codigo_Ruta", how="left")
 
     # Datos esperados
@@ -167,5 +165,6 @@ def test_rutas_sin_actividades(spark_session):
     print("Expected Rows:", sorted(expected_rows, key=lambda x: x['Cedula']))
 
     assert sorted(actual_rows, key=lambda x: x['Cedula']) == sorted(expected_rows, key=lambda x: x['Cedula'])
+
 
 
