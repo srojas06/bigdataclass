@@ -14,7 +14,6 @@ def spark_session():
 
 
 # 1. Test para verificar que la unión de los datos sea correcta
-# Este test valida la correcta unión de los datos de ciclistas, rutas y actividades.
 def test_union_correcta(spark_session):
     df_ciclistas = spark_session.createDataFrame(
         [(118090887, 'Juan Perez', 'San José'), (123456789, 'Maria Gomez', 'Heredia')],
@@ -42,17 +41,15 @@ def test_union_correcta(spark_session):
         ['Cedula', 'Nombre', 'Provincia', 'Codigo_Ruta', 'Nombre_Ruta', 'Kilometros', 'Fecha']
     )
 
-    # Comparación más precisa entre los resultados esperados y actuales
     actual_rows = [row.asDict() for row in actual_ds.collect()]
     expected_rows = [row.asDict() for row in expected_ds.collect()]
 
+    print("Actual Rows:", sorted(actual_rows, key=lambda x: x['Cedula']))
+    print("Expected Rows:", sorted(expected_rows, key=lambda x: x['Cedula']))
+
     assert sorted(actual_rows, key=lambda x: x['Cedula']) == sorted(expected_rows, key=lambda x: x['Cedula'])
 
-
-
-
-# 2. Test para verificar que los ciclistas sin actividad se manejen correctamente
-# Verifica que los ciclistas sin actividad aparezcan en el dataset final con columnas de actividad nulas.
+#2
 def test_ciclistas_sin_actividad(spark_session):
     df_ciclistas = spark_session.createDataFrame(
         [(118090887, 'Juan Perez', 'San José'), (123456789, 'Maria Gomez', 'Heredia')],
@@ -80,18 +77,15 @@ def test_ciclistas_sin_actividad(spark_session):
         ['Cedula', 'Nombre', 'Provincia', 'Codigo_Ruta', 'Nombre_Ruta', 'Kilometros', 'Fecha']
     )
 
-    # Comparación precisa entre los resultados esperados y actuales
     actual_rows = [row.asDict() for row in actual_ds.collect()]
     expected_rows = [row.asDict() for row in expected_ds.collect()]
 
+    print("Actual Rows:", sorted(actual_rows, key=lambda x: x['Cedula']))
+    print("Expected Rows:", sorted(expected_rows, key=lambda x: x['Cedula']))
+
     assert sorted(actual_rows, key=lambda x: x['Cedula']) == sorted(expected_rows, key=lambda x: x['Cedula'])
 
-
-
-
-
-# 3. Test para ciclistas con el mismo nombre pero diferentes cédulas
-# Se prueba que ciclistas con el mismo nombre pero cédulas diferentes no se fusionen incorrectamente.
+#3
 def test_ciclistas_mismo_nombre_diferente_cedula(spark_session):
     df_ciclistas = spark_session.createDataFrame(
         [(118090887, 'Juan Perez', 'San José'), (118090888, 'Juan Perez', 'San José')],
@@ -108,8 +102,9 @@ def test_ciclistas_mismo_nombre_diferente_cedula(spark_session):
         ['Codigo_Ruta', 'Cedula', 'Fecha']
     )
 
-    actual_ds = join_dataframes(df_ciclistas, df_actividades, ['Cedula'], ['Cedula']).withColumnRenamed("Cedula", "Cedula_Actividades")
-    actual_ds = join_dataframes(actual_ds, df_rutas, ['Codigo_Ruta'], ['Codigo_Ruta']).withColumnRenamed("Cedula_Actividades", "Cedula")
+    df_actividades = df_actividades.withColumnRenamed("Cedula", "Cedula_Actividades")
+    actual_ds = join_dataframes(df_ciclistas, df_actividades, ['Cedula'], ['Cedula_Actividades']).withColumnRenamed("Cedula_Actividades", "Cedula")
+    actual_ds = join_dataframes(actual_ds, df_rutas, ['Codigo_Ruta'], ['Codigo_Ruta'])
 
     expected_ds = spark_session.createDataFrame(
         [
@@ -119,18 +114,15 @@ def test_ciclistas_mismo_nombre_diferente_cedula(spark_session):
         ['Cedula', 'Nombre', 'Provincia', 'Codigo_Ruta', 'Nombre_Ruta', 'Kilometros', 'Fecha']
     )
 
-    # Comparación precisa
     actual_rows = [row.asDict() for row in actual_ds.collect()]
     expected_rows = [row.asDict() for row in expected_ds.collect()]
 
+    print("Actual Rows:", sorted(actual_rows, key=lambda x: x['Cedula']))
+    print("Expected Rows:", sorted(expected_rows, key=lambda x: x['Cedula']))
+
     assert sorted(actual_rows, key=lambda x: x['Cedula']) == sorted(expected_rows, key=lambda x: x['Cedula'])
 
-
-
-
-
-# 4. Test para ciclistas con actividades repetidas
-# Verifica que si un ciclista realiza actividades repetidas en un mismo día, se manejen correctamente.
+#4
 def test_ciclistas_actividades_repetidas(spark_session):
     df_ciclistas = spark_session.createDataFrame(
         [(118090887, 'Juan Perez', 'San José')],
@@ -147,10 +139,11 @@ def test_ciclistas_actividades_repetidas(spark_session):
         ['Codigo_Ruta', 'Cedula', 'Fecha']
     )
 
-    actual_ds = join_dataframes(df_ciclistas, df_actividades, ['Cedula'], ['Cedula']).withColumnRenamed("Cedula", "Cedula_Actividades")
-    actual_ds = join_dataframes(actual_ds, df_rutas, ['Codigo_Ruta'], ['Codigo_Ruta']).withColumnRenamed("Cedula_Actividades", "Cedula")
+    df_actividades = df_actividades.withColumnRenamed("Cedula", "Cedula_Actividades")
+    actual_ds = join_dataframes(df_ciclistas, df_actividades, ['Cedula'], ['Cedula_Actividades']).withColumnRenamed("Cedula_Actividades", "Cedula")
+    actual_ds = join_dataframes(actual_ds, df_rutas, ['Codigo_Ruta'], ['Codigo_Ruta'])
 
-    # Agrupar por ciclista y ruta, sumando las actividades repetidas
+    # Agrupar por ciclista y ruta, contando las actividades repetidas
     actual_ds = actual_ds.groupBy("Cedula", "Codigo_Ruta", "Nombre_Ruta", "Kilometros", "Fecha").count()
 
     expected_ds = spark_session.createDataFrame(
@@ -158,26 +151,21 @@ def test_ciclistas_actividades_repetidas(spark_session):
         ['Cedula', 'Nombre', 'Provincia', 'Codigo_Ruta', 'Nombre_Ruta', 'Kilometros', 'Fecha', 'count']
     )
 
-    # Comparación precisa
     actual_rows = [row.asDict() for row in actual_ds.collect()]
     expected_rows = [row.asDict() for row in expected_ds.collect()]
 
+    print("Actual Rows:", sorted(actual_rows, key=lambda x: x['Cedula']))
+    print("Expected Rows:", sorted(expected_rows, key=lambda x: x['Cedula']))
+
     assert sorted(actual_rows, key=lambda x: x['Cedula']) == sorted(expected_rows, key=lambda x: x['Cedula'])
+#5
 
-
-
-
-
-# 5. Test para rutas sin actividades
-# Verifica que las rutas sin actividades no aparezcan en el dataset final.
 def test_rutas_sin_actividades(spark_session):
-    # Datos de ciclistas
     df_ciclistas = spark_session.createDataFrame(
         [(118090887, 'Juan Perez', 'San José')],
         ['Cedula', 'Nombre', 'Provincia']
     )
 
-    # Datos de rutas
     df_rutas = spark_session.createDataFrame(
         [(1, 'Ventolera Escazú', 10.0)],
         ['Codigo_Ruta', 'Nombre_Ruta', 'Kilometros']
@@ -191,19 +179,19 @@ def test_rutas_sin_actividades(spark_session):
     ])
     df_actividades = spark_session.createDataFrame([], schema)
 
-    # Realizar la unión de ciclistas con actividades
     actual_ds = join_dataframes(df_ciclistas, df_actividades, ['Cedula'], ['Cedula'])
     actual_ds = join_dataframes(actual_ds, df_rutas, ['Codigo_Ruta'], ['Codigo_Ruta'])
 
-    # Datos esperados
     expected_ds = spark_session.createDataFrame(
         [(118090887, 'Juan Perez', 'San José', None, None, None, None)],
         ['Cedula', 'Nombre', 'Provincia', 'Codigo_Ruta', 'Nombre_Ruta', 'Kilometros', 'Fecha']
     )
 
-    # Asegurarse de comparar correctamente las filas con 'None'
     actual_rows = [row.asDict() for row in actual_ds.collect()]
     expected_rows = [row.asDict() for row in expected_ds.collect()]
+
+    print("Actual Rows:", sorted(actual_rows, key=lambda x: x['Cedula']))
+    print("Expected Rows:", sorted(expected_rows, key=lambda x: x['Cedula']))
 
     assert sorted(actual_rows, key=lambda x: x['Cedula']) == sorted(expected_rows, key=lambda x: x['Cedula'])
 
