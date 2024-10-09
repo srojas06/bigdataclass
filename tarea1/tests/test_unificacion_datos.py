@@ -452,11 +452,11 @@ def test_multiples_actividades_dias_diferentes(spark_session):
         ['Cedula', 'Nombre', 'Provincia', 'Codigo_Ruta', 'Nombre_Ruta', 'Kilometros', 'Fecha']
     )
 
-    # Comparación de resultados
+ 
     actual_rows = [row.asDict() for row in actual_ds.collect()]
     expected_rows = [row.asDict() for row in expected_ds.collect()]
 
-    # Print de resultados para depuración
+    
     print("Actual Rows:", sorted(actual_rows, key=lambda x: x['Cedula']))
     print("Expected Rows:", sorted(expected_rows, key=lambda x: x['Cedula']))
 
