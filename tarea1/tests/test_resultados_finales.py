@@ -75,6 +75,8 @@ def test_top_n_ciclistas_por_km(spark_session):
 
     assert sorted(actual_rows, key=lambda x: (x['Provincia'], x['Kilometros_Totales']), reverse=True) == sorted(expected_rows, key=lambda x: (x['Provincia'], x['Kilometros_Totales']), reverse=True)
 
+
+
 # 2. Test de promedio diario de km recorridos por ciclista
 def test_promedio_diario_por_provincia(spark_session):
     # DataFrame intermedio con actividades de ciclistas
@@ -99,26 +101,25 @@ def test_promedio_diario_por_provincia(spark_session):
         ['Cedula', 'Nombre', 'Provincia', 'Fecha', 'Kilometros']
     )
 
-    # Calcula el total de km y los días activos por ciclista
+    # Calcular el total de kilómetros y días activos por ciclista
     df_total_km_dia = df_actividades.groupBy("Cedula", "Nombre", "Provincia") \
                                       .agg(F.sum("Kilometros").alias("Total_Kilometros"),
                                            F.countDistinct("Fecha").alias("Dias_Activos")) \
                                       .withColumn("Promedio_Diario", 
                                                   col("Total_Kilometros") / col("Dias_Activos"))
 
-    print("Promedio diario de km por ciclista:")
-    df_total_km_dia.show()  # Muestra el DataFrame con el promedio diario
+    # Obtener el top N (en este caso, 5) por provincia
+    top_n = 5
+    df_top_n = df_total_km_dia.orderBy("Promedio_Diario", ascending=False) \
+                                .groupBy("Provincia") \
+                                .agg(F.collect_list(struct("Nombre", "Promedio_Diario")).alias("Top_Ciclistas")) \
+                                .withColumn("Top_Ciclistas", F.expr(f"slice(Top_Ciclistas, 1, {top_n})"))
 
-    # Obtener el top 5 por provincia
-    df_top_5 = df_total_km_dia.orderBy("Promedio_Diario", ascending=False) \
-                               .groupBy("Provincia") \
-                               .agg(F.collect_list(struct("Nombre", "Promedio_Diario")).alias("Top_Ciclistas")) \
-                               .withColumn("Top_Ciclistas", F.expr("slice(Top_Ciclistas, 1, 5)"))
+    # Mostrar el top N ciclistas por promedio diario
+    print("Top N ciclistas por promedio diario:")
+    df_top_n.show()  # Muestra el DataFrame del top N por promedio diario
 
-    print("Top 5 ciclistas por promedio diario:")
-    df_top_5.show()  # Muestra el DataFrame del top 5 por promedio diario
-
-    # Datos esperados para el top 5
+    # Datos esperados para el top N (ajusta según tus requerimientos)
     expected_ds = spark_session.createDataFrame(
         [
             ('San José', [('Javier Diaz', 90.0), ('María López', 80.0), ('Sofía Alvarado', 60.0), ('Pedro Martínez', 45.0), ('Juan Perez', 35.0)]),
@@ -127,7 +128,8 @@ def test_promedio_diario_por_provincia(spark_session):
         ['Provincia', 'Top_Ciclistas']
     )
 
-    actual_rows = [row.asDict() for row in df_top_5.collect()]
+    # Compara los resultados
+    actual_rows = [row.asDict() for row in df_top_n.collect()]
     expected_rows = [row.asDict() for row in expected_ds.collect()]
 
     # Imprime los resultados para depuración
