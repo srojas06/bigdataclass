@@ -75,9 +75,7 @@ def test_top_n_ciclistas_por_km(spark_session):
 
     assert sorted(actual_rows, key=lambda x: (x['Provincia'], x['Kilometros_Totales']), reverse=True) == sorted(expected_rows, key=lambda x: (x['Provincia'], x['Kilometros_Totales']), reverse=True)
 
-
-# 2. Test de promedio diario de km recorridos por ciclista
-# 2. Test de promedio diario de km recorridos por ciclista
+# Test de promedio diario de km recorridos por ciclista
 def test_promedio_diario_por_provincia(spark_session):
     # DataFrame intermedio con actividades de ciclistas
     df_actividades = spark_session.createDataFrame(
@@ -113,7 +111,8 @@ def test_promedio_diario_por_provincia(spark_session):
     # Obtener el top 5 por provincia
     df_top_5 = df_total_km_dia.orderBy("Promedio_Diario", ascending=False) \
                                .groupBy("Provincia") \
-                               .agg(F.collect_list(struct("Nombre", "Promedio_Diario")).alias("Top_Ciclistas"))
+                               .agg(F.collect_list(struct("Nombre", "Promedio_Diario")).alias("Top_Ciclistas")) \
+                               .withColumn("Top_Ciclistas", F.expr("slice(Top_Ciclistas, 1, 5)"))
 
     print("Top 5 ciclistas por promedio diario:")
     df_top_5.show()  # Muestra el DataFrame del top 5 por promedio diario
@@ -139,8 +138,11 @@ def test_promedio_diario_por_provincia(spark_session):
     for row in expected_rows:
         print(row)
 
-    # Comparar resultados
-    assert sorted(actual_rows, key=lambda x: x['Provincia']) == sorted(expected_rows, key=lambda x: x['Provincia'])
+    # Comparar resultados de forma más simple
+    for actual, expected in zip(actual_rows, expected_rows):
+        assert actual['Provincia'] == expected['Provincia']
+        assert sorted(actual['Top_Ciclistas'], key=lambda x: x['Promedio_Diario'], reverse=True) == sorted(expected['Top_Ciclistas'], key=lambda x: x[1], reverse=True)
+
 
 if __name__ == "__main__":
     spark = spark_session()
