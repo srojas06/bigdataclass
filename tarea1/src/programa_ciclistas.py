@@ -1,5 +1,5 @@
 from pyspark.sql import SparkSession
-from pyspark.sql.functions import sum as _sum, countDistinct, col, rank
+from pyspark.sql.functions import sum as _sum, countDistinct, col, rank, round
 from pyspark.sql.window import Window
 
 # Crea la sesión de Spark
@@ -15,6 +15,13 @@ df_rutas = spark.read.csv('/src/archivo/ruta.csv', header=False, inferSchema=Tru
 df_actividades = spark.read.csv('/src/archivo/actividad.csv', header=False, inferSchema=True)\
     .toDF('Codigo_Ruta', 'Cedula', 'Fecha')
 
+# Verificar cuántos ciclistas de Alajuela hay en total
+df_ciclistas.filter(col("Provincia") == "Alajuela").show()
+
+# Verificar cuántos ciclistas de Alajuela tienen actividades
+df_ciclistas_actividades = df_actividades.join(df_ciclistas, 'Cedula')
+df_ciclistas_actividades.filter(col("Provincia") == "Alajuela").groupBy("Cedula", "Nombre").count().show()
+
 # Unir los datos
 df_merged = df_actividades.join(df_ciclistas, 'Cedula')\
                           .join(df_rutas, 'Codigo_Ruta')
@@ -29,7 +36,7 @@ df_dias_actividades = df_merged.groupBy('Cedula', 'Nombre', 'Provincia')\
 
 # Unir las tablas con kilómetros totales y días activos
 df_final = df_total_km.join(df_dias_actividades, ['Cedula', 'Nombre', 'Provincia'])\
-                      .withColumn('Promedio_Diario', col('Kilometros_Totales') / col('Dias_Activos'))
+                      .withColumn('Promedio_Diario', round(col('Kilometros_Totales') / col('Dias_Activos'), 2))
 
 # Crear una ventana de partición por provincia para el ranking
 windowSpec = Window.partitionBy('Provincia').orderBy(col('Kilometros_Totales').desc(), col('Promedio_Diario').desc())
