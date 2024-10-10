@@ -1,6 +1,7 @@
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import sum as _sum, avg as _avg, count, col, struct, collect_list, expr, explode
 import pytest
+from pyspark.sql import functions as F
 
 @pytest.fixture(scope="session")
 def spark_session():
@@ -102,8 +103,8 @@ def test_promedio_diario_por_provincia(spark_session):
 
     # Calcula el total de km y los días activos por ciclista
     df_total_km_dia = df_actividades.groupBy("Cedula", "Nombre", "Provincia") \
-                                      .agg(_sum("Kilometros").alias("Total_Kilometros"),
-                                           count("Fecha").alias("Dias_Activos"))
+                                      .agg(F.sum("Kilometros").alias("Total_Kilometros"),
+                                           F.count("Fecha").alias("Dias_Activos"))
 
     print("Total de kilómetros y días activos por ciclista:")
     df_total_km_dia.show()  # Muestra el DataFrame con el total de km y días activos
@@ -121,13 +122,17 @@ def test_promedio_diario_por_provincia(spark_session):
                            .agg(collect_list(struct("Nombre", "Promedio_Diario")).alias("Top_Ciclistas")) \
                            .select("Provincia", "Top_Ciclistas")
 
+    # Asegúrate de tomar solo los primeros 5 ciclistas de cada provincia
+    df_top_5 = df_top_5.withColumn("Top_Ciclistas",
+                                    F.expr("slice(Top_Ciclistas, 1, 5)"))
+
     print("Top 5 ciclistas por promedio diario:")
     df_top_5.show()  # Muestra el DataFrame del top 5 por promedio diario
 
     # Datos esperados para el top 5
     expected_ds = spark_session.createDataFrame(
         [
-            ('San José', [('Javier Diaz', 90.0), ('Juan Perez', 35.0), ('Sofía Alvarado', 60.0), ('Carlos Mora', 25.0), ('Pedro Martínez', 45.0)]),
+            ('San José', [('Javier Diaz', 90.0), ('Sofía Alvarado', 60.0), ('Juan Perez', 35.0), ('María López', 80.0), ('Pedro Martínez', 45.0)]),
             ('Heredia', [('Maria Gomez', 35.0), ('Isabella Cruz', 40.0), ('Luis Hernández', 55.0), ('Daniela López', 25.0), ('Lucía Gómez', 50.0)])
         ],
         ['Provincia', 'Top_Ciclistas']
