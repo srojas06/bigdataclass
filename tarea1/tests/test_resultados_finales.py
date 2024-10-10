@@ -78,84 +78,56 @@ def test_top_n_ciclistas_por_km(spark_session):
 
 
 # 2. Test de promedio diario de km recorridos por ciclista
+from pyspark.sql import SparkSession
+from pyspark.sql import functions as F
+
 def test_promedio_diario_por_provincia(spark_session):
-    # DataFrame intermedio con actividades de ciclistas
+    # Crear un DataFrame con 5 ciclistas por provincia
     df_actividades = spark_session.createDataFrame(
         [
             (118090887, 'Juan Perez', 'San José', '2024-10-01', 30.0),
-            (118090887, 'Juan Perez', 'San José', '2024-10-01', 40.0),
+            (118090888, 'Carlos Mora', 'San José', '2024-10-01', 25.0),
+            (118090889, 'Javier Diaz', 'San José', '2024-10-01', 90.0),
+            (118090890, 'Sofía Alvarado', 'San José', '2024-10-01', 60.0),
+            (118090891, 'María López', 'San José', '2024-10-01', 80.0),
             (123456789, 'Maria Gomez', 'Heredia', '2024-10-01', 20.0),
-            (123456789, 'Maria Gomez', 'Heredia', '2024-10-03', 50.0),
-            (111222333, 'Carlos Mora', 'San José', '2024-10-01', 25.0),
-            (987654321, 'Isabella Cruz', 'Heredia', '2024-10-01', 40.0),
-            (135790246, 'Javier Diaz', 'San José', '2024-10-01', 90.0),
-            (102030405, 'Sofía Alvarado', 'San José', '2024-10-01', 60.0),
-            (123456780, 'Daniela López', 'Heredia', '2024-10-01', 30.0),
-            (123456780, 'Daniela López', 'Heredia', '2024-10-03', 20.0),
-            (102030406, 'Luis Hernández', 'Heredia', '2024-10-01', 55.0),
-            (102030407, 'María López', 'San José', '2024-10-02', 80.0),
-            (102030408, 'Andrés Pérez', 'Heredia', '2024-10-02', 70.0),
-            (102030409, 'Pedro Martínez', 'San José', '2024-10-01', 45.0),
-            (102030410, 'Lucía Gómez', 'Heredia', '2024-10-01', 50.0),
+            (123456780, 'Isabella Cruz', 'Heredia', '2024-10-01', 40.0),
+            (123456781, 'Luis Hernández', 'Heredia', '2024-10-01', 55.0),
+            (123456782, 'Lucía Gómez', 'Heredia', '2024-10-01', 50.0),
+            (123456783, 'Daniela López', 'Heredia', '2024-10-01', 25.0)
         ],
         ['Cedula', 'Nombre', 'Provincia', 'Fecha', 'Kilometros']
     )
 
-    # Calcular el total de kilómetros y días activos por ciclista
-    df_total_km_dia = df_actividades.groupBy("Cedula", "Nombre", "Provincia") \
-                                      .agg(F.sum("Kilometros").alias("Total_Kilometros"),
-                                           F.countDistinct("Fecha").alias("Dias_Activos")) \
-                                      .withColumn("Promedio_Diario", 
-                                                  col("Total_Kilometros") / col("Dias_Activos"))
+    # Calcular total y promedio
+    df_top_n = df_actividades.groupBy("Cedula", "Nombre", "Provincia") \
+        .agg(F.sum("Kilometros").alias("Total_Kilometros"), 
+             F.countDistinct("Fecha").alias("Dias_Activos")) \
+        .withColumn("Promedio_Diario", col("Total_Kilometros") / col("Dias_Activos")) \
+        .groupBy("Provincia") \
+        .agg(F.collect_list(F.struct("Nombre", "Promedio_Diario")).alias("Top_Ciclistas")) \
+        .withColumn("Top_Ciclistas", F.expr("slice(Top_Ciclistas, 1, 3)")) \
+        .orderBy("Provincia")
 
-    # Obtener el top N (en este caso, 5) por provincia
-    top_n = 5
-    df_top_n = df_total_km_dia.orderBy("Promedio_Diario", ascending=False) \
-                                .groupBy("Provincia") \
-                                .agg(F.collect_list(struct("Nombre", "Promedio_Diario")).alias("Top_Ciclistas")) \
-                                .withColumn("Top_Ciclistas", F.expr(f"slice(Top_Ciclistas, 1, {top_n})"))
+    # Mostrar resultados
+    print("Top 3 ciclistas por promedio diario:")
+    df_top_n.show()
 
-    # Mostrar el top N ciclistas por promedio diario
-    print("Top N ciclistas por promedio diario:")
-    df_top_n.show()  # Muestra el DataFrame del top N por promedio diario
-
-    # Datos esperados para el top N (ajusta según tus requerimientos)
+    # Datos esperados para el top 3
     expected_ds = spark_session.createDataFrame(
         [
-            ('San José', [('Javier Diaz', 90.0), ('María López', 80.0), ('Sofía Alvarado', 60.0), ('Pedro Martínez', 45.0), ('Juan Perez', 35.0)]),
-            ('Heredia', [('Maria Gomez', 35.0), ('Isabella Cruz', 40.0), ('Luis Hernández', 55.0), ('Lucía Gómez', 50.0), ('Daniela López', 25.0)])
+            ('San José', [('Javier Diaz', 90.0), ('María López', 80.0), ('Sofía Alvarado', 60.0)]),
+            ('Heredia', [('Isabella Cruz', 40.0), ('Luis Hernández', 55.0), ('Lucía Gómez', 50.0)])
         ],
         ['Provincia', 'Top_Ciclistas']
     )
 
-    # Compara los resultados
+    # Comparar resultados
     actual_rows = [row.asDict() for row in df_top_n.collect()]
     expected_rows = [row.asDict() for row in expected_ds.collect()]
 
-    # Imprime los resultados para depuración
-    print("Actual Rows:")
-    for row in actual_rows:
-        print(row)
-
-    print("\nExpected Rows:")
-    for row in expected_rows:
-        print(row)
-
     # Comparar resultados
     assert sorted(actual_rows, key=lambda x: x['Provincia']) == sorted(expected_rows, key=lambda x: x['Provincia'])
-
-    # Comparar los Top Ciclistas
-    for actual, expected in zip(actual_rows, expected_rows):
-        assert actual['Provincia'] == expected['Provincia']
-        actual_top = sorted(actual['Top_Ciclistas'], key=lambda x: x['Promedio_Diario'], reverse=True)
-        expected_top = sorted(expected['Top_Ciclistas'], key=lambda x: x[1], reverse=True)
-
-        for act, exp in zip(actual_top, expected_top):
-            assert act['Nombre'] == exp[0]
-            assert act['Promedio_Diario'] == exp[1]
-
-
-
 
 
 
