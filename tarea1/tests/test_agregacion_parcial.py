@@ -1,5 +1,5 @@
 from pyspark.sql import SparkSession
-from pyspark.sql.functions import sum as _sum, count, min as _min, max as _max
+from pyspark.sql.functions import sum as _sum, count, min as _min, max as _max, avg as _avg
 import pytest
 
 @pytest.fixture(scope="session")
