@@ -133,7 +133,7 @@ def test_promedio_diario_por_provincia(spark_session):
 
 if __name__ == "__main__":
     spark = spark_session()
-    test_top_n_ciclistas_por_km(spark):
+    test_top_n_ciclistas_por_km(spark)
     test_promedio_diario_por_provincia(spark)
     print("todos los tests pasaron bien")
 
