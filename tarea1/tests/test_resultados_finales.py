@@ -99,13 +99,13 @@ def test_promedio_diario_por_provincia(spark_session):
 
     # Calcular total y promedio
     df_top_n = df_actividades.groupBy("Cedula", "Nombre", "Provincia") \
-        .agg(F.sum("Kilometros").alias("Total_Kilometros"), 
+        .agg(F.sum("Kilometros").alias("Total_Kilometros"),
              F.countDistinct("Fecha").alias("Dias_Activos")) \
         .withColumn("Promedio_Diario", col("Total_Kilometros") / col("Dias_Activos")) \
-        .withColumn("Rank", row_number().over(Window.partitionBy("Provincia").orderBy(F.desc("Promedio_Diario")))) \
+        .withColumn("Rank", F.row_number().over(Window.partitionBy("Provincia").orderBy(F.desc("Promedio_Diario")))) \
         .filter(col("Rank") <= 3) \
         .groupBy("Provincia") \
-        .agg(collect_list(struct("Rank", "Nombre", "Promedio_Diario")).alias("Top_Ciclistas")) \
+        .agg(F.collect_list(struct("Rank", "Nombre", "Promedio_Diario")).alias("Top_Ciclistas")) \
         .orderBy("Provincia")
 
     # Mostrar resultados
@@ -116,7 +116,7 @@ def test_promedio_diario_por_provincia(spark_session):
     expected_ds = spark_session.createDataFrame(
         [
             ('San José', [(1, 'Javier Diaz', 90.0), (2, 'María López', 80.0), (3, 'Sofía Alvarado', 60.0)]),
-            ('Heredia', [(1, 'Luis Hernández', 55.0), (2, 'Isabella Cruz', 40.0), (3, 'Lucía Gómez', 50.0)])
+            ('Heredia', [(1, 'Luis Hernández', 55.0), (2, 'Lucía Gómez', 50.0), (3, 'Isabella Cruz', 40.0)])
         ],
         ['Provincia', 'Top_Ciclistas']
     )
@@ -125,8 +125,16 @@ def test_promedio_diario_por_provincia(spark_session):
     actual_rows = [row.asDict() for row in df_top_n.collect()]
     expected_rows = [row.asDict() for row in expected_ds.collect()]
 
+    # Asegúrate de que el formato sea correcto
+    for actual in actual_rows:
+        actual['Top_Ciclistas'] = [(x[0], x[1], x[2]) for x in actual['Top_Ciclistas']]
+
+    for expected in expected_rows:
+        expected['Top_Ciclistas'] = [(x[0], x[1], x[2]) for x in expected['Top_Ciclistas']]
+
     # Comparar resultados
     assert sorted(actual_rows, key=lambda x: x['Provincia']) == sorted(expected_rows, key=lambda x: x['Provincia'])
+
 
 
 
