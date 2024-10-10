@@ -2,6 +2,8 @@ from pyspark.sql import SparkSession
 from pyspark.sql.functions import sum as _sum, avg as _avg, count, col, struct, collect_list, expr, explode
 import pytest
 from pyspark.sql import functions as F
+from pyspark.sql import Window
+
 
 @pytest.fixture(scope="session")
 def spark_session():
@@ -77,11 +79,8 @@ def test_top_n_ciclistas_por_km(spark_session):
 
 
 
-# 2. Test de promedio diario de km recorridos por ciclista
-from pyspark.sql import SparkSession
-from pyspark.sql import functions as F
-
-def test_promedio_diario_por_provincia(spark_session):
+#2
+    def test_promedio_diario_por_provincia(spark_session):
     # Crear un DataFrame con 5 ciclistas por provincia
     df_actividades = spark_session.createDataFrame(
         [
@@ -104,20 +103,21 @@ def test_promedio_diario_por_provincia(spark_session):
         .agg(F.sum("Kilometros").alias("Total_Kilometros"), 
              F.countDistinct("Fecha").alias("Dias_Activos")) \
         .withColumn("Promedio_Diario", col("Total_Kilometros") / col("Dias_Activos")) \
+        .withColumn("Rank", F.row_number().over(Window.partitionBy("Provincia").orderBy(F.desc("Promedio_Diario")))) \
+        .filter(F.col("Rank") <= 3) \
         .groupBy("Provincia") \
-        .agg(F.collect_list(F.struct("Nombre", "Promedio_Diario")).alias("Top_Ciclistas")) \
-        .withColumn("Top_Ciclistas", F.expr("slice(Top_Ciclistas, 1, 3)")) \
+        .agg(F.collect_list(F.struct("Rank", "Nombre", "Promedio_Diario")).alias("Top_Ciclistas")) \
         .orderBy("Provincia")
 
     # Mostrar resultados
-    print("Top 3 ciclistas por promedio diario:")
+    print("Top 3 ciclistas por promedio diario con ranking:")
     df_top_n.show()
 
-    # Datos esperados para el top 3
+    # Datos esperados para el top 3 con ranking
     expected_ds = spark_session.createDataFrame(
         [
-            ('San José', [('Javier Diaz', 90.0), ('María López', 80.0), ('Sofía Alvarado', 60.0)]),
-            ('Heredia', [('Isabella Cruz', 40.0), ('Luis Hernández', 55.0), ('Lucía Gómez', 50.0)])
+            ('San José', [(1, 'Javier Diaz', 90.0), (2, 'María López', 80.0), (3, 'Sofía Alvarado', 60.0)]),
+            ('Heredia', [(1, 'Luis Hernández', 55.0), (2, 'Isabella Cruz', 40.0), (3, 'Lucía Gómez', 50.0)])
         ],
         ['Provincia', 'Top_Ciclistas']
     )
@@ -128,7 +128,6 @@ def test_promedio_diario_por_provincia(spark_session):
 
     # Comparar resultados
     assert sorted(actual_rows, key=lambda x: x['Provincia']) == sorted(expected_rows, key=lambda x: x['Provincia'])
-
 
 
 if __name__ == "__main__":
