@@ -16,8 +16,9 @@ df_actividades = spark.read.csv('/src/archivo/actividad.csv', header=False, infe
     .toDF('Codigo_Ruta', 'Cedula', 'Fecha')
 
 # Quita los espacios en blanco 
-df_ciclistas = df_ciclistas.withColumn('Cedula', col('Cedula').cast('string').trim())
-df_ciclistas = df_ciclistas.withColumn('Nombre', col('Nombre').trim())
+df_ciclistas = df_ciclistas.withColumn('Cedula', trim(col('Cedula')))
+df_ciclistas = df_ciclistas.withColumn('Nombre', trim(col('Nombre')))
+
 
 # Une los datos
 df_merged = df_actividades.join(df_ciclistas, 'Cedula')\
