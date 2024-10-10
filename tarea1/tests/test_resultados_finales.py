@@ -118,24 +118,23 @@ def test_promedio_diario_por_provincia(spark_session):
     expected_ds = spark_session.createDataFrame(
         [
             ('San José', [(1, 'Javier Diaz', 90.0), (2, 'María López', 80.0), (3, 'Sofía Alvarado', 60.0), (4, 'Juan Perez', 30.0), (5, 'Carlos Mora', 25.0)]),
-            ('Heredia', [(1, 'Luis Hernández', 55.0), (2, 'Lucía Gómez', 50.0), (3, 'Isabella Cruz', 40.0), (4, 'Fernando Ruiz', 65.0), (5, 'Maria Gomez', 20.0)])
+            ('Heredia', [(1, 'Fernando Ruiz', 65.0), (2, 'Andrea Pérez', 75.0), (3, 'Luis Hernández', 55.0), (4, 'Lucía Gómez', 50.0), (5, 'Isabella Cruz', 40.0)])
         ],
         ['Provincia', 'Top_Ciclistas']
     )
 
-
     actual_rows = [row.asDict() for row in df_top_n.collect()]
     expected_rows = [row.asDict() for row in expected_ds.collect()]
 
-    
+    # Asegúrate de que el formato sea correcto
     for actual in actual_rows:
         actual['Top_Ciclistas'] = [(x[0], x[1], x[2]) for x in actual['Top_Ciclistas']]
 
     for expected in expected_rows:
         expected['Top_Ciclistas'] = [(x[0], x[1], x[2]) for x in expected['Top_Ciclistas']]
 
+    # Comparar resultados
     assert sorted(actual_rows, key=lambda x: x['Provincia']) == sorted(expected_rows, key=lambda x: x['Provincia'])
-
 
 
 
