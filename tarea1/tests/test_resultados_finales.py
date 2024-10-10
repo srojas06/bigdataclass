@@ -1,5 +1,5 @@
 from pyspark.sql import SparkSession
-from pyspark.sql.functions import sum as _sum, avg as _avg, count, col, struct, collect_list, expr, explode
+from pyspark.sql.functions import sum as _sum, avg as _avg, count, col, struct, collect_list, expr, explode,countDistinct, row_number
 import pytest
 from pyspark.sql import functions as F
 from pyspark.sql import Window
