@@ -1,5 +1,5 @@
 from pyspark.sql import SparkSession
-from pyspark.sql.functions import sum as _sum, avg as _avg, count, collect_list, struct
+from pyspark.sql.functions import sum as _sum, avg as _avg, count, col, struct, collect_list, expr, explode
 import pytest
 
 @pytest.fixture(scope="session")
@@ -52,7 +52,7 @@ def test_top_n_ciclistas_por_km(spark_session):
         "Ciclista.Kilometros_Totales"
     ).orderBy("Provincia", "Ciclista.Kilometros_Totales", ascending=False)
 
-    # dtos esperados
+    # datos esperados
     expected_ds = spark_session.createDataFrame(
         [
             ('San José', 555555555, 'Javier Díaz', 90.0), 
@@ -132,5 +132,3 @@ if __name__ == "__main__":
     test_top_n_ciclistas_por_km(spark)
     test_promedio_diario_por_provincia(spark)
     print("Todos los tests pasaron correctamente.")
-
-
