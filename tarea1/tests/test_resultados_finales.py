@@ -75,7 +75,8 @@ def test_top_n_ciclistas_por_km(spark_session):
 
     assert sorted(actual_rows, key=lambda x: (x['Provincia'], x['Kilometros_Totales']), reverse=True) == sorted(expected_rows, key=lambda x: (x['Provincia'], x['Kilometros_Totales']), reverse=True)
 
-# Test de promedio diario de km recorridos por ciclista
+
+# 2. Test de promedio diario de km recorridos por ciclista
 def test_promedio_diario_por_provincia(spark_session):
     # DataFrame intermedio con actividades de ciclistas
     df_actividades = spark_session.createDataFrame(
@@ -138,10 +139,20 @@ def test_promedio_diario_por_provincia(spark_session):
     for row in expected_rows:
         print(row)
 
-    # Comparar resultados de forma más simple
+    # Comparar resultados
+    assert sorted(actual_rows, key=lambda x: x['Provincia']) == sorted(expected_rows, key=lambda x: x['Provincia'])
+
+    # Comparar los Top Ciclistas
     for actual, expected in zip(actual_rows, expected_rows):
         assert actual['Provincia'] == expected['Provincia']
-        assert sorted(actual['Top_Ciclistas'], key=lambda x: x['Promedio_Diario'], reverse=True) == sorted(expected['Top_Ciclistas'], key=lambda x: x[1], reverse=True)
+        actual_top = sorted(actual['Top_Ciclistas'], key=lambda x: x['Promedio_Diario'], reverse=True)
+        expected_top = sorted(expected['Top_Ciclistas'], key=lambda x: x[1], reverse=True)
+
+        for act, exp in zip(actual_top, expected_top):
+            assert act['Nombre'] == exp[0]
+            assert act['Promedio_Diario'] == exp[1]
+
+
 
 
 if __name__ == "__main__":
