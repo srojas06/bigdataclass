@@ -74,6 +74,7 @@ def test_top_n_ciclistas_por_km(spark_session):
 
     assert sorted(actual_rows, key=lambda x: (x['Provincia'], x['Kilometros_Totales']), reverse=True) == sorted(expected_rows, key=lambda x: (x['Provincia'], x['Kilometros_Totales']), reverse=True)
 
+
 # 2. Top N ciclistas por provincia según el promedio diario de kilómetros recorridos
 def test_promedio_diario_por_provincia(spark_session):
     # DataFrame intermedio con actividades de ciclistas
@@ -103,9 +104,17 @@ def test_promedio_diario_por_provincia(spark_session):
                                       .agg(_sum("Kilometros").alias("Total_Kilometros"),
                                            count("Fecha").alias("Dias_Activos"))
 
+    # Depuración: imprimir el DataFrame total de km y días activos
+    print("Total de kilómetros y días activos por ciclista:")
+    df_total_km_dia.show()
+
     # Calcula el promedio diario de km recorridos
-    df_promedio = df_total_km_dia.withColumn("Promedio_Diario", 
+    df_promedio = df_total_km_dia.withColumn("Promedio_Diario",
                                               col("Total_Kilometros") / col("Dias_Activos"))
+
+    # Depuración: imprimir el DataFrame con el promedio diario
+    print("Promedio diario de km recorridos por ciclista:")
+    df_promedio.show()
 
     # Ordena y selecciona el top 5 por promedio diario
     df_top_5 = df_promedio.orderBy("Promedio_Diario", ascending=False) \
@@ -117,7 +126,7 @@ def test_promedio_diario_por_provincia(spark_session):
     expected_ds = spark_session.createDataFrame(
         [
             ('San José', [('Javier Diaz', 90.0), ('Juan Perez', 35.0), ('Sofía Alvarado', 60.0), ('Carlos Mora', 25.0), ('Pedro Martínez', 45.0)]),
-            ('Heredia', [('Maria Gomez', 35.0), ('Isabella Cruz', 40.0), ('Daniela López', 25.0), ('Luis Hernández', 55.0), ('Lucía Gómez', 50.0)])
+            ('Heredia', [('Maria Gomez', 35.0), ('Isabella Cruz', 40.0), ('Luis Hernández', 55.0), ('Daniela López', 25.0), ('Lucía Gómez', 50.0)])
         ],
         ['Provincia', 'Top_Ciclistas']
     )
@@ -125,7 +134,18 @@ def test_promedio_diario_por_provincia(spark_session):
     actual_rows = [row.asDict() for row in df_top_5.collect()]
     expected_rows = [row.asDict() for row in expected_ds.collect()]
 
+    # Depuración: imprimir los resultados actuales y esperados
+    print("Resultados actuales:")
+    for row in actual_rows:
+        print(row)
+
+    print("Resultados esperados:")
+    for row in expected_rows:
+        print(row)
+
+    # Compara los resultados
     assert sorted(actual_rows, key=lambda x: x['Provincia']) == sorted(expected_rows, key=lambda x: x['Provincia'])
+
 
 if __name__ == "__main__":
     spark = spark_session()
