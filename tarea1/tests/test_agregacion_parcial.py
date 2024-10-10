@@ -215,6 +215,135 @@ def test_maxima_distancia_por_dia(spark_session):
     expected_rows = [row.asDict() for row in expected_ds.collect()]
 
     assert sorted(actual_rows, key=lambda x: (x['Cedula'], x['Fecha'])) == sorted(expected_rows, key=lambda x: (x['Cedula'], x['Fecha']))
+    
+# 7. Test de promedio de km  por provincia
+def test_promedio_kilometros_por_provincia(spark_session):
+      # Dataframe intermedio ya unido
+    df_merged = spark_session.createDataFrame(
+        [
+            (118090887, 'Juan Perez', 'Heredia', 50.0),
+            (123456789, 'Maria Gomez', 'Heredia', 70.0),
+            (987654321, 'Luis Solano', 'San José', 40.0),
+            (111222333, 'Ana Rojas', 'San José', 60.0),
+            (135790246, 'Carlos Mora', 'Heredia', 30.0),
+        ],
+        ['Cedula', 'Nombre', 'Provincia', 'Kilometros']
+    )
+
+    df_promedio_km_provincia = df_merged.groupBy("Provincia") \
+                                        .agg(_avg("Kilometros").alias("Promedio_Kilometros"))
+
+    expected_ds = spark_session.createDataFrame(
+        [
+            ('Heredia', 50.0),
+            ('San José', 50.0),
+        ],
+        ['Provincia', 'Promedio_Kilometros']
+    )
+
+    actual_rows = [row.asDict() for row in df_promedio_km_provincia.collect()]
+    expected_rows = [row.asDict() for row in expected_ds.collect()]
+
+    assert sorted(actual_rows, key=lambda x: x['Provincia']) == sorted(expected_rows, key=lambda x: x['Provincia'])
+
+
+# 8. Test de total de km por ciclista y dia
+def test_total_kilometros_por_dia(spark_session):
+      # Dataframe intermedio ya unido
+    df_merged = spark_session.createDataFrame(
+        [
+            (118090887, 'Juan Perez', '2024-10-01', 15.0),
+            (118090887, 'Juan Perez', '2024-10-01', 10.0),
+            (123456789, 'Maria Gomez', '2024-10-02', 20.0),
+            (123456789, 'Maria Gomez', '2024-10-03', 12.0),
+        ],
+        ['Cedula', 'Nombre', 'Fecha', 'Kilometros']
+    )
+
+    df_total_km_por_dia = df_merged.groupBy("Cedula", "Nombre", "Fecha") \
+                                   .agg(_sum("Kilometros").alias("Kilometros_Totales"))
+
+    expected_ds = spark_session.createDataFrame(
+        [
+            (118090887, 'Juan Perez', '2024-10-01', 25.0),
+            (123456789, 'Maria Gomez', '2024-10-02', 20.0),
+            (123456789, 'Maria Gomez', '2024-10-03', 12.0),
+        ],
+        ['Cedula', 'Nombre', 'Fecha', 'Kilometros_Totales']
+    )
+
+    actual_rows = [row.asDict() for row in df_total_km_por_dia.collect()]
+    expected_rows = [row.asDict() for row in expected_ds.collect()]
+
+    assert sorted(actual_rows, key=lambda x: (x['Cedula'], x['Fecha'])) == sorted(expected_rows, key=lambda x: (x['Cedula'], x['Fecha']))
+
+
+# 9. Test de suma de km por ciclista y provincia
+def test_suma_kilometros_por_provincia(spark_session):
+      # Dataframe intermedio ya unido
+    df_merged = spark_session.createDataFrame(
+        [
+            (118090887, 'Juan Perez', 'Heredia', 50.0),
+            (123456789, 'Maria Gomez', 'Heredia', 70.0),
+            (987654321, 'Luis Solano', 'San José', 40.0),
+            (111222333, 'Ana Rojas', 'San José', 60.0),
+            (135790246, 'Carlos Mora', 'Heredia', 30.0),
+            (246813579, 'Laura Castro', 'Heredia', 90.0),
+            (999999999, 'Diego Gómez', 'San José', 85.0),
+        ],
+        ['Cedula', 'Nombre', 'Provincia', 'Kilometros']
+    )
+
+    df_suma_km = df_merged.groupBy("Cedula", "Nombre", "Provincia") \
+                          .agg(_sum("Kilometros").alias("Kilometros_Totales"))
+
+    expected_ds = spark_session.createDataFrame(
+        [
+            (118090887, 'Juan Perez', 'Heredia', 50.0),
+            (123456789, 'Maria Gomez', 'Heredia', 70.0),
+            (987654321, 'Luis Solano', 'San José', 40.0),
+            (111222333, 'Ana Rojas', 'San José', 60.0),
+            (135790246, 'Carlos Mora', 'Heredia', 30.0),
+            (246813579, 'Laura Castro', 'Heredia', 90.0),
+            (999999999, 'Diego Gómez', 'San José', 85.0),
+        ],
+        ['Cedula', 'Nombre', 'Provincia', 'Kilometros_Totales']
+    )
+
+    actual_rows = [row.asDict() for row in df_suma_km.collect()]
+    expected_rows = [row.asDict() for row in expected_ds.collect()]
+
+    assert sorted(actual_rows, key=lambda x: x['Cedula']) == sorted(expected_rows, key=lambda x: x['Cedula'])
+
+
+# 10. Test de total de km recorridos por dia por provincia
+def test_total_kilometros_por_dia_por_provincia(spark_session):
+      # Dataframe intermedio ya unido
+    df_merged = spark_session.createDataFrame(
+        [
+            (118090887, 'San José', '2024-10-01', 20.0),
+            (123456789, 'Heredia', '2024-10-02', 30.0),
+            (987654321, 'San José', '2024-10-01', 40.0),
+            (111222333, 'Heredia', '2024-10-02', 15.0),
+        ],
+        ['Cedula', 'Provincia', 'Fecha', 'Kilometros']
+    )
+
+    df_total_km_provincia = df_merged.groupBy("Provincia", "Fecha") \
+                                     .agg(_sum("Kilometros").alias("Kilometros_Totales"))
+
+    expected_ds = spark_session.createDataFrame(
+        [
+            ('San José', '2024-10-01', 60.0),
+            ('Heredia', '2024-10-02', 45.0),
+        ],
+        ['Provincia', 'Fecha', 'Kilometros_Totales']
+    )
+
+    actual_rows = [row.asDict() for row in df_total_km_provincia.collect()]
+    expected_rows = [row.asDict() for row in expected_ds.collect()]
+
+    assert sorted(actual_rows, key=lambda x: (x['Provincia'], x['Fecha'])) == sorted(expected_rows, key=lambda x: (x['Provincia'], x['Fecha']))
 
 
 if __name__ == "__main__":
@@ -222,4 +351,13 @@ if __name__ == "__main__":
     test_total_kilometros_por_provincia(spark)
     test_kilometros_por_ciclista_por_dia(spark)
     test_total_actividades_por_ciclista(spark)
-    print("Todos los tests pasaron correctamente.")
+    test_ciclistas_actividades_diferentes_dias_misma_ruta(spark)
+    test_minima_distancia_por_dia(spark)
+    test_maxima_distancia_por_dia(spark)
+    test_promedio_kilometros_por_provincia(spark)
+    test_total_kilometros_por_dia(spark)
+    test_suma_kilometros_por_provincia(spark)
+    test_total_kilometros_por_dia_por_provincia(spark)
+    
+    print("los tests pasaron bien")
+
