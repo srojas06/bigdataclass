@@ -78,9 +78,8 @@ def test_top_n_ciclistas_por_km(spark_session):
     assert sorted(actual_rows, key=lambda x: (x['Provincia'], x['Kilometros_Totales']), reverse=True) == sorted(expected_rows, key=lambda x: (x['Provincia'], x['Kilometros_Totales']), reverse=True)
 
 
-
-#2
-    def test_promedio_diario_por_provincia(spark_session):
+# Test 2 de promedio diario por provincia
+def test_promedio_diario_por_provincia(spark_session):
     # Crear un DataFrame con 5 ciclistas por provincia
     df_actividades = spark_session.createDataFrame(
         [
@@ -103,10 +102,10 @@ def test_top_n_ciclistas_por_km(spark_session):
         .agg(F.sum("Kilometros").alias("Total_Kilometros"), 
              F.countDistinct("Fecha").alias("Dias_Activos")) \
         .withColumn("Promedio_Diario", col("Total_Kilometros") / col("Dias_Activos")) \
-        .withColumn("Rank", F.row_number().over(Window.partitionBy("Provincia").orderBy(F.desc("Promedio_Diario")))) \
-        .filter(F.col("Rank") <= 3) \
+        .withColumn("Rank", row_number().over(Window.partitionBy("Provincia").orderBy(F.desc("Promedio_Diario")))) \
+        .filter(col("Rank") <= 3) \
         .groupBy("Provincia") \
-        .agg(F.collect_list(F.struct("Rank", "Nombre", "Promedio_Diario")).alias("Top_Ciclistas")) \
+        .agg(collect_list(struct("Rank", "Nombre", "Promedio_Diario")).alias("Top_Ciclistas")) \
         .orderBy("Provincia")
 
     # Mostrar resultados
