@@ -1,5 +1,5 @@
 from pyspark.sql import SparkSession
-from pyspark.sql.functions import sum as _sum, avg as _avg, count, col, collect_list, expr
+from pyspark.sql.functions import sum as _sum, avg as _avg, count, col, collect_list, expr, struct, explode
 import pytest
 
 @pytest.fixture(scope="session")
@@ -39,7 +39,7 @@ def test_top_n_ciclistas_por_km(spark_session):
     # Se obtiene el top N (en este caso, top 5)
     n = 5
     df_top_n_filtered = df_top_n.groupBy("Provincia") \
-                                  .agg(collect_list(expr("struct(Cedula, Nombre, Kilometros_Totales)")).alias("Top_Ciclistas")) \
+                                  .agg(collect_list(struct("Cedula", "Nombre", "Kilometros_Totales")).alias("Top_Ciclistas")) \
                                   .withColumn("Top_Ciclistas", expr(f"slice(Top_Ciclistas, 1, {n})"))
 
     # Se ordena el resultado para que el ciclista con mayor km esté primero
@@ -129,6 +129,7 @@ def test_promedio_diario_por_provincia(spark_session):
     expected_rows = [row.asDict() for row in expected_ds.collect()]
 
     assert sorted(actual_rows, key=lambda x: x['Provincia']) == sorted(expected_rows, key=lambda x: x['Provincia'])
+
 
 if __name__ == "__main__":
     spark = spark_session()
