@@ -1,5 +1,5 @@
 from pyspark.sql import SparkSession
-from pyspark.sql.functions import sum as _sum, avg as _avg
+from pyspark.sql.functions import sum as _sum, avg as _avg, count, col, collect_list, expr
 import pytest
 
 @pytest.fixture(scope="session")
@@ -12,7 +12,6 @@ def spark_session():
 
 # 1. Test de top N ciclistas por total de kilómetros recorridos:
 def test_top_n_ciclistas_por_km(spark_session):
-  
     # DataFrame intermedio con datos de ciclistas
     df_merged = spark_session.createDataFrame(
         [
@@ -32,18 +31,18 @@ def test_top_n_ciclistas_por_km(spark_session):
         ['Cedula', 'Nombre', 'Provincia', 'Kilometros']
     )
 
-    # se agrupa por ciclista y provincia, sumando los kilómetros
+    # Agrupación por ciclista y provincia, sumando los kilómetros
     df_top_n = df_merged.groupBy("Cedula", "Nombre", "Provincia") \
                          .agg(_sum("Kilometros").alias("Kilometros_Totales")) \
                          .orderBy("Provincia", "Kilometros_Totales", ascending=False)
 
-    # se obtiene el top N (en este caso, top 5)
+    # Se obtiene el top N (en este caso, top 5)
     n = 5
     df_top_n_filtered = df_top_n.groupBy("Provincia") \
-                                  .agg(_collect_list(struct("Cedula", "Nombre", "Kilometros_Totales")).alias("Top_Ciclistas")) \
+                                  .agg(collect_list(expr("struct(Cedula, Nombre, Kilometros_Totales)")).alias("Top_Ciclistas")) \
                                   .withColumn("Top_Ciclistas", expr(f"slice(Top_Ciclistas, 1, {n})"))
 
-    # se ordena el resultado para que el ciclista con mayor km esté primero
+    # Se ordena el resultado para que el ciclista con mayor km esté primero
     df_top_n_sorted = df_top_n_filtered.select(
         "Provincia", 
         explode("Top_Ciclistas").alias("Ciclista")
@@ -54,7 +53,7 @@ def test_top_n_ciclistas_por_km(spark_session):
         "Ciclista.Kilometros_Totales"
     ).orderBy("Provincia", "Ciclista.Kilometros_Totales", ascending=False)
 
-    # dtos esperados
+    # Datos esperados
     expected_ds = spark_session.createDataFrame(
         [
             ('San José', 555555555, 'Javier Díaz', 90.0), 
@@ -76,18 +75,8 @@ def test_top_n_ciclistas_por_km(spark_session):
 
     assert sorted(actual_rows, key=lambda x: (x['Provincia'], x['Kilometros_Totales']), reverse=True) == sorted(expected_rows, key=lambda x: (x['Provincia'], x['Kilometros_Totales']), reverse=True)
 
-from pyspark.sql import SparkSession
-from pyspark.sql.functions import avg as _avg, sum as _sum, count, col
-import pytest
 
-@pytest.fixture(scope="session")
-def spark_session():
-    return SparkSession.builder \
-        .appName("TestSession") \
-        .master("local[*]") \
-        .getOrCreate()
-
-# 2 Top N ciclistas por provincia según el promedio diario de kilómetros recorridos
+# 2. Test de top N ciclistas por provincia según el promedio diario de kilómetros recorridos
 def test_promedio_diario_por_provincia(spark_session):
     # DataFrame intermedio con actividades de ciclistas
     df_actividades = spark_session.createDataFrame(
@@ -95,7 +84,7 @@ def test_promedio_diario_por_provincia(spark_session):
             (118090887, 'Juan Perez', 'San José', '2024-10-01', 30.0),  
             (118090887, 'Juan Perez', 'San José', '2024-10-01', 40.0),  # Dos actividades el mismo día para Juan Perez
             (123456789, 'Maria Gomez', 'Heredia', '2024-10-01', 20.0),  
-            (123456789, 'Maria Gomez', 'Heredia', '2024-10-03', 50.0),  # Dos actividades en diferente dia para Maria Gomez
+            (123456789, 'Maria Gomez', 'Heredia', '2024-10-03', 50.0),  # Dos actividades en diferente día para Maria Gomez
             (111222333, 'Carlos Mora', 'San José', '2024-10-01', 25.0),  
             (987654321, 'Isabella Cruz', 'Heredia', '2024-10-01', 40.0),  
             (135790246, 'Javier Diaz', 'San José', '2024-10-01', 90.0), 
@@ -123,8 +112,8 @@ def test_promedio_diario_por_provincia(spark_session):
     # Ordena y selecciona el top 5 por promedio diario
     df_top_5 = df_promedio.orderBy("Promedio_Diario", ascending=False) \
                            .groupBy("Provincia") \
-                           .agg(_collect_list(col("Nombre")).alias("Top_Ciclistas"), 
-                                _collect_list(col("Promedio_Diario")).alias("Promedios")) \
+                           .agg(collect_list(col("Nombre")).alias("Top_Ciclistas"), 
+                                collect_list(col("Promedio_Diario")).alias("Promedios")) \
                            .select("Provincia", "Top_Ciclistas", "Promedios")
 
     # Datos esperados para el top 5
@@ -145,6 +134,6 @@ if __name__ == "__main__":
     spark = spark_session()
     test_top_n_ciclistas_por_km(spark):
     test_promedio_diario_por_provincia(spark)
-    print("Todos los tests pasaron correctamente.")
+    print("todos los tests pasaron bien")
 
 
