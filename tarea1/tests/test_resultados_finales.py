@@ -75,7 +75,6 @@ def test_top_n_ciclistas_por_km(spark_session):
 
     assert sorted(actual_rows, key=lambda x: (x['Provincia'], x['Kilometros_Totales']), reverse=True) == sorted(expected_rows, key=lambda x: (x['Provincia'], x['Kilometros_Totales']), reverse=True)
 
-
 # 2. Test de top N ciclistas por provincia según el promedio diario de kilómetros recorridos
 def test_promedio_diario_por_provincia(spark_session):
     # DataFrame intermedio con actividades de ciclistas
@@ -112,22 +111,21 @@ def test_promedio_diario_por_provincia(spark_session):
     # Ordena y selecciona el top 5 por promedio diario
     df_top_5 = df_promedio.orderBy("Promedio_Diario", ascending=False) \
                            .groupBy("Provincia") \
-                           .agg(collect_list(col("Nombre")).alias("Top_Ciclistas"), 
-                                collect_list(col("Promedio_Diario")).alias("Promedios")) \
-                           .select("Provincia", "Top_Ciclistas", "Promedios")
+                           .agg(collect_list(struct("Nombre", "Promedio_Diario")).alias("Top_Ciclistas")) \
+                           .select("Provincia", "Top_Ciclistas")
 
     # Datos esperados para el top 5
     expected_ds = spark_session.createDataFrame(
         [
-            ('San José', ['Javier Diaz', 'Juan Perez', 'Sofía Alvarado', 'Carlos Mora', 'Pedro Martínez'], [90.0, 70.0, 60.0, 25.0, 45.0]),
-            ('Heredia', ['Maria Gomez', 'Isabella Cruz', 'Daniela López', 'Luis Hernández', 'Lucía Gómez'], [35.0, 40.0, 25.0, 55.0, 50.0])
+            ('San José', [('Javier Diaz', 90.0), ('Juan Perez', 35.0), ('Sofía Alvarado', 60.0), ('Carlos Mora', 25.0), ('Pedro Martínez', 45.0)]),
+            ('Heredia', [('Maria Gomez', 35.0), ('Isabella Cruz', 40.0), ('Daniela López', 25.0), ('Luis Hernández', 55.0), ('Lucía Gómez', 50.0)])
         ],
-        ['Provincia', 'Top_Ciclistas', 'Promedios']
+        ['Provincia', 'Top_Ciclistas']
     )
 
     actual_rows = [row.asDict() for row in df_top_5.collect()]
     expected_rows = [row.asDict() for row in expected_ds.collect()]
-
+     # Compara los resultados
     assert sorted(actual_rows, key=lambda x: x['Provincia']) == sorted(expected_rows, key=lambda x: x['Provincia'])
 
 
