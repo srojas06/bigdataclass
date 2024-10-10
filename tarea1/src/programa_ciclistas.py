@@ -1,5 +1,5 @@
 from pyspark.sql import SparkSession
-from pyspark.sql.functions import sum as _sum, countDistinct, col, rank, round
+from pyspark.sql.functions import sum as _sum, countDistinct, col, rank, round,trim
 from pyspark.sql.window import Window
 
 
