@@ -74,15 +74,12 @@ def main():
     df_final = df_total_km.join(df_dias_actividades, ['Cedula', 'Nombre', 'Provincia'])\
                           .withColumn('Promedio_Diario', col('Kilometros_Totales') / col('Dias_Activos'))
 
-    # Verificar el DataFrame antes de filtrar los Top 5
-    print("Datos completos antes de filtrar:")
-    df_final.show(35, truncate=False)
 
     # Obtener el top 5 por provincia
     df_top_5 = top_5_ciclistas(df_final)
     
-    # Forzar la visualización de los 35 resultados (5 por cada provincia)
-    df_top_5.show(35, truncate=False)  # `truncate=False` para no truncar los resultados
+
+    df_top_5.show(35, truncate=False)  
 
 if __name__ == "__main__":
     main()
