@@ -129,6 +129,7 @@ def test_promedio_diario_por_provincia(spark_session):
     assert sorted(actual_rows, key=lambda x: x['Provincia']) == sorted(expected_rows, key=lambda x: x['Provincia'])
 
 
+
 if __name__ == "__main__":
     spark = spark_session()
     test_top_n_ciclistas_por_km(spark)
