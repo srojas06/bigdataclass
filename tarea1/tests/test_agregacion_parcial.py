@@ -42,28 +42,27 @@ def test_total_kilometros_por_provincia(spark_session):
     assert sorted(actual_rows, key=lambda x: x['Provincia']) == sorted(expected_rows, key=lambda x: x['Provincia'])
 
 
-# 2. Test de km recorridos por ciclista por dia:
+# 2. Test de km recorridos por ciclista por día (incluyendo suma de actividades el mismo día):
 def test_kilometros_por_ciclista_por_dia(spark_session):
     # Dataframe intermedio ya unido
     df_merged = spark_session.createDataFrame(
         [
             (118090887, 'Juan Perez', '2024-10-01', 15.5),
-            (118090887, 'Juan Perez', '2024-10-02', 20.0),
+            (118090887, 'Juan Perez', '2024-10-01', 10.0),  # juancito tiene 2 actividades el mismo dia
             (123456789, 'Maria Gomez', '2024-10-01', 10.0),
             (123456789, 'Maria Gomez', '2024-10-03', 12.0),
         ],
         ['Cedula', 'Nombre', 'Fecha', 'Kilometros']
     )
 
-    # Cálculo de kilómetros recorridos por día
+    # se suma actividades del mismo día
     df_km_por_dia = df_merged.groupBy("Cedula", "Nombre", "Fecha") \
                              .agg(_sum("Kilometros").alias("Kilometros_Diarios"))
 
     # Datos esperados
     expected_ds = spark_session.createDataFrame(
         [
-            (118090887, 'Juan Perez', '2024-10-01', 15.5),
-            (118090887, 'Juan Perez', '2024-10-02', 20.0),
+            (118090887, 'Juan Perez', '2024-10-01', 25.5),  # Suma de 15.5 + 10.0 el mismo día
             (123456789, 'Maria Gomez', '2024-10-01', 10.0),
             (123456789, 'Maria Gomez', '2024-10-03', 12.0),
         ],
@@ -82,22 +81,22 @@ def test_total_actividades_por_ciclista(spark_session):
     df_merged = spark_session.createDataFrame(
         [
             (118090887, 'Juan Perez', '2024-10-01', 15.5),
-            (118090887, 'Juan Perez', '2024-10-02', 20.0),
+            (118090887, 'Juan Perez', '2024-10-01', 20.0),  # Juan tiene 2 actividades el mismo día
             (123456789, 'Maria Gomez', '2024-10-01', 10.0),
             (123456789, 'Maria Gomez', '2024-10-03', 12.0),
         ],
         ['Cedula', 'Nombre', 'Fecha', 'Kilometros']
     )
 
-    # Cálculo del total de actividades por ciclista
+    # Cálculo del total de actividades por ciclista (contando todas las actividades)
     df_total_actividades = df_merged.groupBy("Cedula", "Nombre") \
-                                    .agg(count("Fecha").alias("Total_Actividades"))
+                                    .agg(count("*").alias("Total_Actividades"))  # Contar todas las filas
 
     # Datos esperados
     expected_ds = spark_session.createDataFrame(
         [
-            (118090887, 'Juan Perez', 2),
-            (123456789, 'Maria Gomez', 2)
+            (118090887, 'Juan Perez', 2),  # 2 actividades para juan en la misma fecha pero diferentes actividades
+            (123456789, 'Maria Gomez', 2),  # 2 ctividades, en fechas diferentes para maría
         ],
         ['Cedula', 'Nombre', 'Total_Actividades']
     )
@@ -106,6 +105,7 @@ def test_total_actividades_por_ciclista(spark_session):
     expected_rows = [row.asDict() for row in expected_ds.collect()]
 
     assert sorted(actual_rows, key=lambda x: x['Cedula']) == sorted(expected_rows, key=lambda x: x['Cedula'])
+
     
 # 4. Test de ciclistas con actividades en días diferentes en la misma ruta: se maneja como actividades separadas
 import pytest
@@ -122,7 +122,7 @@ def spark_session():
 
 # 4. Test de ciclistas con actividades en días diferentes en la misma ruta: se maneja como actividades separadas
 def test_ciclistas_actividades_diferentes_dias_misma_ruta(spark_session):
-    # Dataframe intermedio que ya contiene los datos de ciclistas, rutas y actividades
+    
     df_intermedio = spark_session.createDataFrame(
         [
             (118090887, 'Juan Perez', 'San José', 'Ventolera Escazú', 10.0, '2024-10-01'),
