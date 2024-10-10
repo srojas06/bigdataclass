@@ -35,8 +35,8 @@ def calcula_promedio(df_merged):
     return df_dias_actividades
 
 # Obtiene el top 5 de ciclistas por cada provincia
-def top_5_ciclistas(df_final, criterio):
-    windowSpec = Window.partitionBy('Provincia').orderBy(col(criterio).desc())
+def top_5_ciclistas(df_final, criterios):
+    windowSpec = Window.partitionBy('Provincia').orderBy(*[col(criterio).desc() for criterio in criterios])
     df_top_5 = df_final.withColumn("rank", rank().over(windowSpec))\
                        .filter(col("rank") <= 5)\
                        .drop("rank")
@@ -60,15 +60,10 @@ def main():
     df_final = df_total_km.join(df_dias_actividades, ['Cedula', 'Nombre', 'Provincia'])\
                           .withColumn('Promedio_Diario', col('Kilometros_Totales') / col('Dias_Activos'))
 
-    # Obtiene el top 5 por km
-    df_top_5_km = top_5_ciclistas(df_final, 'Kilometros_Totales')
-    print("Top 5 ciclistas por provincia (kilómetros totales):")
-    df_top_5_km.show(35)
-
-    # Obtiene el top 5 por promedio diario
-    df_top_5_prom = top_5_ciclistas(df_final, 'Promedio_Diario')
-    print("\nTop 5 ciclistas por provincia (promedio diario):")
-    df_top_5_prom.show(35)
+    # Obtiene el top 5 por km y promedio diario
+    df_top_5 = top_5_ciclistas(df_final, ['Kilometros_Totales', 'Promedio_Diario'])
+    print("Top 5 ciclistas por provincia (kilómetros totales y promedio diario):")
+    df_top_5.show(35)
 
 if __name__ == "__main__":
     main()
