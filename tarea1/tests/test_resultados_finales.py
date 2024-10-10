@@ -75,7 +75,6 @@ def test_top_n_ciclistas_por_km(spark_session):
 
     assert sorted(actual_rows, key=lambda x: (x['Provincia'], x['Kilometros_Totales']), reverse=True) == sorted(expected_rows, key=lambda x: (x['Provincia'], x['Kilometros_Totales']), reverse=True)
 
-
 # 2. Test de promedio diario de km recorridos por ciclista
 def test_promedio_diario_por_provincia(spark_session):
     # DataFrame intermedio con actividades de ciclistas
@@ -104,7 +103,8 @@ def test_promedio_diario_por_provincia(spark_session):
     df_total_km_dia = df_actividades.groupBy("Cedula", "Nombre", "Provincia") \
                                       .agg(F.sum("Kilometros").alias("Total_Kilometros"),
                                            F.countDistinct("Fecha").alias("Dias_Activos")) \
-                                      .withColumn("Promedio_Diario", col("Total_Kilometros") / col("Dias_Activos"))
+                                      .withColumn("Promedio_Diario", 
+                                                  col("Total_Kilometros") / col("Dias_Activos"))
 
     print("Promedio diario de km por ciclista:")
     df_total_km_dia.show()  # Muestra el DataFrame con el promedio diario
@@ -151,6 +151,8 @@ def test_promedio_diario_por_provincia(spark_session):
         for act, exp in zip(actual_top, expected_top):
             assert act['Nombre'] == exp[0]
             assert act['Promedio_Diario'] == exp[1]
+
+
 
 
 
