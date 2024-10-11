@@ -365,13 +365,11 @@ def test_multiples_provincias(spark_session):
         ['Cedula', 'Nombre', 'Provincia', 'Fecha', 'Kilometros']
     )
 
-    # Se calcula el total
-    df_top_n = df_actividades.groupBy("Cedula", "Nombre", "Provincia") \
-        .agg(F.sum("Kilometros").alias("Total_Kilometros")) \
-        .withColumn("Rank", F.row_number().over(Window.partitionBy("Provincia").orderBy(F.desc("Total_Kilometros")))) \
+    # Se ordena y se filtra por el top 3
+    df_top_n = df_actividades.withColumn("Rank", F.row_number().over(Window.partitionBy("Provincia").orderBy(F.desc("Kilometros")))) \
         .filter(col("Rank") <= 3) \
         .groupBy("Provincia") \
-        .agg(F.collect_list(struct("Rank", "Nombre", "Total_Kilometros")).alias("Top_Ciclistas")) \
+        .agg(F.collect_list(struct("Rank", "Nombre", "Kilometros")).alias("Top_Ciclistas")) \
         .orderBy("Provincia")
 
     print("Top 3 ciclistas por total de kilómetros:")
@@ -384,8 +382,8 @@ def test_multiples_provincias(spark_session):
             ('Heredia', [(1, 'Luis Hernández', 55.0), (2, 'Lucía Gómez', 50.0), (3, 'Isabella Cruz', 40.0)]),
             ('Alajuela', [(1, 'Diego Sánchez', 85.0), (2, 'Ricardo Gómez', 60.0), (3, 'Isabel Torres', 55.0)]),
             ('Cartago', [(1, 'José Martínez', 70.0), (2, 'Ana Torres', 50.0), (3, 'Pablo Pérez', 45.0)]),
-            ('Guanacaste', [(1, 'Sofía Morales', 90.0), (2, 'Fernando Castro', 60.0), (3, 'María González', 55.0)]),
-            ('Puntarenas', [(1, 'Carlos Díaz', 75.0), (2, 'Isabel Jiménez', 80.0), (3, 'Diego Hernández', 70.0)]),
+            ('Guanacaste', [(1, 'Sofía Morales', 90.0), (2, 'Rafael López', 80.0), (3, 'Fernando Castro', 60.0)]),
+            ('Puntarenas', [(1, 'Isabel Jiménez', 80.0), (2, 'Carlos Díaz', 75.0), (3, 'Diego Hernández', 70.0)]),
             ('Limón', [(1, 'Lucía González', 65.0), (2, 'Carlos Arias', 50.0), (3, 'Pedro López', 45.0)]),
         ],
         ['Provincia', 'Top_Ciclistas']
@@ -401,8 +399,6 @@ def test_multiples_provincias(spark_session):
         expected['Top_Ciclistas'] = [(x[0], x[1], x[2]) for x in expected['Top_Ciclistas']]
 
     assert sorted(actual_rows, key=lambda x: x['Provincia']) == sorted(expected_rows, key=lambda x: x['Provincia'])
-
-
 
 
 if __name__ == "__main__":
