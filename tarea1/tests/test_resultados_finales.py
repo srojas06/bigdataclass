@@ -1,6 +1,6 @@
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import sum as _sum, avg as _avg, count, col, struct, collect_list, expr, explode, countDistinct, row_number
-from pyspark.sql.types import StructType, StructField, StringType, IntegerType, FloatType
+from pyspark.sql.types import StructType, StructField, StringType, IntegerType, FloatType,LongType
 import pytest
 from pyspark.sql import functions as F
 from pyspark.sql import Window
@@ -441,6 +441,15 @@ def test_duplicados(spark_session):
 
 # Test #9 ciclistas sin actividades
 def test_ciclistas_sin_actividades(spark_session):
+    # Definir el esquema explícitamente
+    schema = StructType([
+        StructField('Cedula', LongType(), True),
+        StructField('Nombre', StringType(), True),
+        StructField('Provincia', StringType(), True),
+        StructField('Fecha', StringType(), True),  # Puedes usar StringType o DateType según necesites
+        StructField('Kilometros', FloatType(), True)
+    ])
+
     # Crear un DataFrame con ciclistas que no tienen actividades registradas
     df_actividades = spark_session.createDataFrame(
         [
@@ -449,7 +458,7 @@ def test_ciclistas_sin_actividades(spark_session):
             (118090889, 'Javier Diaz', 'Heredia', None, 0.0),   # Sin actividades
             (118090890, 'Sofía Alvarado', 'Alajuela', None, 0.0), # Sin actividades
         ],
-        ['Cedula', 'Nombre', 'Provincia', 'Fecha', 'Kilometros']
+        schema  
     )
 
     # Intentar calcular el ranking, pero como no hay kilómetros, no debería haber resultados
@@ -462,7 +471,6 @@ def test_ciclistas_sin_actividades(spark_session):
 
     # Verificar que el resultado esté vacío
     assert df_top_n.isEmpty()  # No debe haber ciclistas en el ranking
-
 
 
 
