@@ -316,7 +316,7 @@ def test_un_solo_ciclista(spark_session):
 
 #7 Test de verificar el ranking en todas las provincias 
 def test_multiples_provincias(spark_session):
-    # se crea un dataFrame con ciclistas de 7 provincias
+    # Crear un DataFrame con ciclistas de 7 provincias
     df_actividades = spark_session.createDataFrame(
         [
             # San José
@@ -365,7 +365,7 @@ def test_multiples_provincias(spark_session):
         ['Cedula', 'Nombre', 'Provincia', 'Fecha', 'Kilometros']
     )
 
-    # se calcula el total y promedio
+    # Se calcula el total
     df_top_n = df_actividades.groupBy("Cedula", "Nombre", "Provincia") \
         .agg(F.sum("Kilometros").alias("Total_Kilometros")) \
         .withColumn("Rank", F.row_number().over(Window.partitionBy("Provincia").orderBy(F.desc("Total_Kilometros")))) \
@@ -382,7 +382,7 @@ def test_multiples_provincias(spark_session):
         [
             ('San José', [(1, 'Javier Diaz', 90.0), (2, 'María López', 80.0), (3, 'Sofía Alvarado', 60.0)]),
             ('Heredia', [(1, 'Luis Hernández', 55.0), (2, 'Lucía Gómez', 50.0), (3, 'Isabella Cruz', 40.0)]),
-            ('Alajuela', [(1, 'Diego Sánchez', 85.0), (2, 'Isabel Torres', 55.0), (3, 'Ricardo Gómez', 60.0)]),
+            ('Alajuela', [(1, 'Diego Sánchez', 85.0), (2, 'Ricardo Gómez', 60.0), (3, 'Isabel Torres', 55.0)]),
             ('Cartago', [(1, 'José Martínez', 70.0), (2, 'Ana Torres', 50.0), (3, 'Pablo Pérez', 45.0)]),
             ('Guanacaste', [(1, 'Sofía Morales', 90.0), (2, 'Fernando Castro', 60.0), (3, 'María González', 55.0)]),
             ('Puntarenas', [(1, 'Carlos Díaz', 75.0), (2, 'Isabel Jiménez', 80.0), (3, 'Diego Hernández', 70.0)]),
@@ -401,6 +401,7 @@ def test_multiples_provincias(spark_session):
         expected['Top_Ciclistas'] = [(x[0], x[1], x[2]) for x in expected['Top_Ciclistas']]
 
     assert sorted(actual_rows, key=lambda x: x['Provincia']) == sorted(expected_rows, key=lambda x: x['Provincia'])
+
 
 
 if __name__ == "__main__":
