@@ -243,6 +243,38 @@ def test_ranking_por_kilometros_totales(spark_session):
 
     assert sorted(actual_rows, key=lambda x: x['Provincia']) == sorted(expected_rows, key=lambda x: x['Provincia'])
 
+#Test 5 que verifica si no hay ciclistas
+def test_cero_ciclistas(spark_session):
+    # Crear un DataFrame vacío para simular que no hay ciclistas
+    df_actividades = spark_session.createDataFrame(
+        [], 
+        ['Cedula', 'Nombre', 'Provincia', 'Fecha', 'Kilometros']
+    )
+
+    # Calcula el total y promedio (aunque no hay datos, debe manejarse sin errores)
+    df_top_n = df_actividades.groupBy("Cedula", "Nombre", "Provincia") \
+        .agg(F.sum("Kilometros").alias("Total_Kilometros")) \
+        .withColumn("Rank", F.row_number().over(Window.partitionBy("Provincia").orderBy(F.desc("Total_Kilometros")))) \
+        .filter(col("Rank") <= 5) \
+        .groupBy("Provincia") \
+        .agg(F.collect_list(struct("Rank", "Nombre", "Total_Kilometros")).alias("Top_Ciclistas")) \
+        .orderBy("Provincia")
+
+   
+    print("Top ciclistas por kilómetros totales con ranking (debería estar vacío):")
+    df_top_n.show()
+
+    # Datos esperados: sin ciclistas, el resultado debe ser vacío
+    expected_ds = spark_session.createDataFrame(
+        [], 
+        ['Provincia', 'Top_Ciclistas']
+    )
+
+    actual_rows = [row.asDict() for row in df_top_n.collect()]
+    expected_rows = [row.asDict() for row in expected_ds.collect()]
+
+    assert actual_rows == expected_rows, "El ranking debería estar vacío cuando no hay ciclistas."
+
 
 
 
@@ -252,4 +284,5 @@ if __name__ == "__main__":
     test_promedio_diario_por_provincia(spark)
     test_empates_en_kilometros(spark)
     test_ranking_por_kilometros_totales(spark)
+    test_cero_ciclistas(spark)
     print("Todos los tests pasaron correctamente.")
