@@ -444,24 +444,25 @@ def test_ciclistas_sin_actividades(spark_session):
     # Crear un DataFrame con ciclistas que no tienen actividades registradas
     df_actividades = spark_session.createDataFrame(
         [
-            (118090887, 'Juan Perez', 'San José'),  # Sin actividades
-            (118090888, 'Carlos Mora', 'San José'),  # Sin actividades
-            (118090889, 'Javier Diaz', 'Heredia'),   # Sin actividades
-            (118090890, 'Sofía Alvarado', 'Alajuela'), # Sin actividades
+            (118090887, 'Juan Perez', 'San José', None, 0.0),  # Sin actividades
+            (118090888, 'Carlos Mora', 'San José', None, 0.0),  # Sin actividades
+            (118090889, 'Javier Diaz', 'Heredia', None, 0.0),   # Sin actividades
+            (118090890, 'Sofía Alvarado', 'Alajuela', None, 0.0), # Sin actividades
         ],
-        ['Cedula', 'Nombre', 'Provincia']
+        ['Cedula', 'Nombre', 'Provincia', 'Fecha', 'Kilometros']
     )
 
-    # Intentar calcular el ranking
+    # Intentar calcular el ranking, que no debe incluir a ciclistas sin actividades
     df_top_n = df_actividades.groupBy("Cedula", "Nombre", "Provincia") \
-        .agg(F.count("*").alias("Actividades")) \
-        .filter(col("Actividades") > 0) \
+        .agg(F.sum("Kilometros").alias("Total_Kilometros")) \
+        .filter(col("Total_Kilometros") > 0) \
         .groupBy("Provincia") \
-        .agg(F.collect_list(struct("Cedula", "Nombre", "Actividades")).alias("Top_Ciclistas")) \
+        .agg(F.collect_list(struct("Cedula", "Nombre", "Total_Kilometros")).alias("Top_Ciclistas")) \
         .orderBy("Provincia")
 
-    # Verificar que el resultado está vacío
+    # Verificar que el resultado esté vacío
     assert df_top_n.count() == 0  # No debe haber ciclistas en el ranking
+
 
 
 #  Test #10 de múltiples actividades en dias diferentes
