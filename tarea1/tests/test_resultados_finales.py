@@ -181,6 +181,68 @@ def test_empates_en_kilometros(spark_session):
         expected['Top_Ciclistas'] = [(x[0], x[1], x[2]) for x in expected['Top_Ciclistas']]
 
     assert sorted(actual_rows, key=lambda x: x['Provincia']) == sorted(expected_rows, key=lambda x: x['Provincia'])
+    
+#Test 4 que verifica el ranking  si hay varias actividades en diferentes dias
+def test_ranking_por_kilometros_totales(spark_session):
+    # Crear un DataFrame con 8 ciclistas por provincia para hacer el top 5
+    df_actividad = spark_session.createDataFrame(
+        [
+            (118090887, 'Juan Perez', 'San José', '2024-10-01', 30.0),
+            (118090887, 'Juan Perez', 'San José', '2024-10-02', 40.0),  # Total: 70
+            (118090888, 'Carlos Mora', 'San José', '2024-10-01', 20.0),
+            (118090888, 'Carlos Mora', 'San José', '2024-10-02', 10.0),  # Total: 30
+            (118090889, 'Javier Diaz', 'San José', '2024-10-01', 90.0),  # Total: 90
+            (118090890, 'Sofía Alvarado', 'San José', '2024-10-01', 60.0),  # Total: 60
+            (118090891, 'María López', 'San José', '2024-10-01', 80.0),  # Total: 80
+            (118090892, 'Pedro González', 'San José', '2024-10-01', 50.0),  # Total: 50
+            (123456789, 'Maria Gomez', 'Heredia', '2024-10-01', 20.0),
+            (123456789, 'Maria Gomez', 'Heredia', '2024-10-02', 10.0),  # Total: 30
+            (123456780, 'Isabella Cruz', 'Heredia', '2024-10-01', 40.0),
+            (123456780, 'Isabella Cruz', 'Heredia', '2024-10-02', 20.0),  # Total: 60
+            (123456781, 'Luis Hernández', 'Heredia', '2024-10-01', 55.0),  # Total: 55
+            (123456782, 'Lucía Gómez', 'Heredia', '2024-10-01', 50.0),  # Total: 50
+            (123456783, 'Daniela López', 'Heredia', '2024-10-01', 25.0),  # Total: 25
+            (123456784, 'Fernando Ruiz', 'Heredia', '2024-10-01', 65.0),  # Total: 65
+            (123456785, 'Andrea Pérez', 'Heredia', '2024-10-01', 75.0),  # Total: 75
+        ],
+        ['Cedula', 'Nombre', 'Provincia', 'Fecha', 'Kilometros']
+    )
+
+    # Calcula el total de km
+    df_top_n = df_actividad.groupBy("Cedula", "Nombre", "Provincia") \
+        .agg(F.sum("Kilometros").alias("Total_Kilometros")) \
+        .withColumn("Rank", F.row_number().over(Window.partitionBy("Provincia").orderBy(F.desc("Total_Kilometros")))) \
+        .filter(col("Rank") <= 5) \
+        .groupBy("Provincia") \
+        .agg(F.collect_list(struct("Rank", "Nombre", "Total_Kilometros")).alias("Top_Ciclistas")) \
+        .orderBy("Provincia")
+
+
+    print("Top 5 ciclistas por kilómetros totales con ranking:")
+    df_top_n.show()
+
+    # Datos esperados para el ranking
+    expected_ds = spark_session.createDataFrame(
+        [
+            ('San José', [(1, 'Javier Diaz', 90.0), (2, 'María López', 80.0), (3, 'Juan Perez', 70.0), (4, 'Sofía Alvarado', 60.0), (5, 'Pedro González', 50.0)]),
+            ('Heredia', [(1, 'Andrea Pérez', 75.0), (2, 'Fernando Ruiz', 65.0), (3, 'Isabella Cruz', 60.0), (4, 'Luis Hernández', 55.0), (5, 'Lucía Gómez', 50.0)])
+        ],
+        ['Provincia', 'Top_Ciclistas']
+    )
+
+    actual_rows = [row.asDict() for row in df_top_n.collect()]
+    expected_rows = [row.asDict() for row in expected_ds.collect()]
+
+ 
+    for actual in actual_rows:
+        actual['Top_Ciclistas'] = [(x[0], x[1], x[2]) for x in actual['Top_Ciclistas']]
+
+    for expected in expected_rows:
+        expected['Top_Ciclistas'] = [(x[0], x[1], x[2]) for x in expected['Top_Ciclistas']]
+
+
+    assert sorted(actual_rows, key=lambda x: x['Provincia']) == sorted(expected_rows, key=lambda x: x['Provincia'])
+
 
 
 
@@ -189,4 +251,5 @@ if __name__ == "__main__":
     test_top_n_ciclistas_por_km(spark)
     test_promedio_diario_por_provincia(spark)
     test_empates_en_kilometros(spark)
+    test_ranking_por_kilometros_totales(spark)
     print("Todos los tests pasaron correctamente.")
