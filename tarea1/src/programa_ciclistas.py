@@ -15,7 +15,7 @@ df_rutas = spark.read.csv('/src/archivo/ruta.csv', header=False, inferSchema=Tru
 df_actividades = spark.read.csv('/src/archivo/actividad.csv', header=False, inferSchema=True)\
     .toDF('Codigo_Ruta', 'Cedula', 'Fecha')
 
-# Une los datos
+# se une los datos
 df_merged = df_actividades.join(df_ciclistas, 'Cedula')\
                           .join(df_rutas, 'Codigo_Ruta')
 
