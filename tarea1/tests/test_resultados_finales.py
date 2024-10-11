@@ -453,7 +453,7 @@ def test_cero_kilometros(spark_session):
         ['Cedula', 'Nombre', 'Provincia', 'Fecha', 'Kilometros']
     )
 
-    # Calcular total y crear ranking
+    # se calcula total y se crea ranking
     df_top_n = df_actividades.groupBy("Cedula", "Nombre", "Provincia") \
         .agg(F.sum("Kilometros").alias("Total_Kilometros")) \
         .withColumn("Rank", F.row_number().over(Window.partitionBy("Provincia").orderBy(F.desc("Total_Kilometros")))) \
@@ -477,8 +477,10 @@ def test_cero_kilometros(spark_session):
     expected_rows = [row.asDict() for row in expected_ds.collect()]
 
     assert sorted(actual_rows, key=lambda x: x['Provincia']) == sorted(expected_rows, key=lambda x: x['Provincia'])
+
     
 #  Test #10 de múltiples actividades en dias diferentes
+# 10 Test Múltiples Actividades en Días Diferentes
 def test_multiples_actividades_dias_diferentes(spark_session):
     # Se crea un DataFrame con ciclistas y actividades en diferentes días
     df_actividades = spark_session.createDataFrame(
@@ -500,7 +502,7 @@ def test_multiples_actividades_dias_diferentes(spark_session):
         ['Cedula', 'Nombre', 'Provincia', 'Fecha', 'Kilometros']
     )
 
-    #  total de km
+    # Calcula total de km
     df_top_n = df_actividades.groupBy("Cedula", "Nombre", "Provincia") \
         .agg(F.sum("Kilometros").alias("Total_Kilometros")) \
         .withColumn("Rank", F.row_number().over(Window.partitionBy("Provincia").orderBy(F.desc("Total_Kilometros")))) \
@@ -516,7 +518,7 @@ def test_multiples_actividades_dias_diferentes(spark_session):
     expected_ds = spark_session.createDataFrame(
         [
             ('San José', [(1, 'Carlos Mora', 100.0), (2, 'Javier Diaz', 90.0), (3, 'Juan Perez', 50.0)]),
-            ('Heredia', [(1, 'Luis Hernández', 55.0), (2, 'Lucía Gómez', 30.0), (3, 'Isabella Cruz', 40.0)]),
+            ('Heredia', [(1, 'Luis Hernández', 55.0), (2, 'Isabella Cruz', 40.0), (3, 'Lucía Gómez', 30.0)]),
         ],
         ['Provincia', 'Top_Ciclistas']
     )
@@ -531,6 +533,7 @@ def test_multiples_actividades_dias_diferentes(spark_session):
         expected['Top_Ciclistas'] = [(x[0], x[1], x[2]) for x in expected['Top_Ciclistas']]
 
     assert sorted(actual_rows, key=lambda x: x['Provincia']) == sorted(expected_rows, key=lambda x: x['Provincia'])
+
 
 if __name__ == "__main__":
     spark = spark_session()
