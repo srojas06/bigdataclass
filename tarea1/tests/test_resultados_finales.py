@@ -464,32 +464,8 @@ def test_ciclistas_sin_actividades(spark_session):
     assert df_top_n.count() == 0  # No debe haber ciclistas en el ranking
 
 
-
-    
 #  Test #10 de múltiples actividades en dias diferentes
-def test_multiples_actividades_dias_diferentes(spark_session):
-    # Crear un DataFrame con ciclistas y actividades en diferentes días
-    df_actividades = spark_session.createDataFrame(
-        [
-            # San José
-            (118090887, 'Juan Perez', 'San José', '2024-10-01', 30.0),
-            (118090887, 'Juan Perez', 'San José', '2024-10-02', 20.0),  # Total 50
-            (118090888, 'Carlos Mora', 'San José', '2024-10-01', 40.0),
-            (118090888, 'Carlos Mora', 'San José', '2024-10-03', 60.0),  # Total 100
-            (118090889, 'Javier Diaz', 'San José', '2024-10-01', 90.0),
-            (118090890, 'Sofía Alvarado', 'San José', '2024-10-01', 70.0),
-            # Heredia
-            (123456789, 'Maria Gomez', 'Heredia', '2024-10-01', 10.0),
-            (123456780, 'Isabella Cruz', 'Heredia', '2024-10-02', 40.0),  # Total 40
-            (123456781, 'Luis Hernández', 'Heredia', '2024-10-01', 55.0),
-            (123456782, 'Lucía Gómez', 'Heredia', '2024-10-01', 30.0),
-            (123456783, 'Daniela López', 'Heredia', '2024-10-03', 25.0),  # Total 55
-        ],
-        ['Cedula', 'Nombre', 'Provincia', 'Fecha', 'Kilometros']
-    )
-
-    # Test actividades por cada ciclista
-    def test_actividades_por_ciclista(spark_session):
+def test_actividades_por_ciclista(spark_session):
     # Crear un DataFrame con ciclistas y sus actividades
     df_actividades = spark_session.createDataFrame(
         [
