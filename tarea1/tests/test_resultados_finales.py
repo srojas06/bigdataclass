@@ -135,6 +135,52 @@ def test_promedio_diario_por_provincia(spark_session):
     # Comparar resultados
     assert sorted(actual_rows, key=lambda x: x['Provincia']) == sorted(expected_rows, key=lambda x: x['Provincia'])
 
+#Test 3 caso de empate
+def test_empates_en_kilometros(spark_session):
+    # Crear un DataFrame con datos de ciclistas que incluye un empate
+    df_empates = spark_session.createDataFrame(
+        [
+            (118090887, 'Juan Perez', 'San José', '2024-10-01', 40.0),  # Actividad 1
+            (118090887, 'Juan Perez', 'San José', '2024-10-02', 20.0),  # Actividad 2
+            (118090888, 'Carlos Mora', 'San José', '2024-10-01', 40.0),  # Actividad 1
+            (118090888, 'Carlos Mora', 'San José', '2024-10-02', 30.0)   # Actividad 2
+        ],
+        ['Cedula', 'Nombre', 'Provincia', 'Fecha', 'Kilometros']
+    )
+
+    # Calcular total y promedio
+    df_top_n = df_empates.groupBy("Cedula", "Nombre", "Provincia") \
+                          .agg(F.sum("Kilometros").alias("Total_Kilometros"),
+                               F.countDistinct("Fecha").alias("Dias_Activos")) \
+                          .withColumn("Promedio_Diario", col("Total_Kilometros") / col("Dias_Activos")) \
+                          .withColumn("Rank", F.row_number().over(Window.partitionBy("Provincia").orderBy(F.desc("Promedio_Diario")))) \
+                          .filter(col("Rank") <= 5) \
+                          .groupBy("Provincia") \
+                          .agg(F.collect_list(struct("Rank", "Nombre", "Promedio_Diario")).alias("Top_Ciclistas")) \
+                          .orderBy("Provincia")
+
+ 
+    print("Top ciclistas por promedio diario con ranking:")
+    df_top_n.show()
+
+    # Datos esperados para el top con ranking
+    expected_ds = spark_session.createDataFrame(
+        [
+            ('San José', [(1, 'Carlos Mora', 35.0), (2, 'Juan Perez', 30.0)]),  # Carlos tiene un promedio mayor
+        ],
+        ['Provincia', 'Top_Ciclistas']
+    )
+
+    actual_rows = [row.asDict() for row in df_top_n.collect()]
+    expected_rows = [row.asDict() for row in expected_ds.collect()]
+
+    for actual in actual_rows:
+        actual['Top_Ciclistas'] = [(x[0], x[1], x[2]) for x in actual['Top_Ciclistas']]
+
+    for expected in expected_rows:
+        expected['Top_Ciclistas'] = [(x[0], x[1], x[2]) for x in expected['Top_Ciclistas']]
+
+    assert sorted(actual_rows, key=lambda x: x['Provincia']) == sorted(expected_rows, key=lambda x: x['Provincia'])
 
 
 
