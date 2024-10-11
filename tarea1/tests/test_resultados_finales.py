@@ -452,7 +452,7 @@ def test_ciclistas_sin_actividades(spark_session):
         ['Cedula', 'Nombre', 'Provincia', 'Fecha', 'Kilometros']
     )
 
-    # Intentar calcular el ranking, que no debe incluir a ciclistas sin actividades
+    # Intentar calcular el ranking, pero como no hay kilómetros, no debería haber resultados
     df_top_n = df_actividades.groupBy("Cedula", "Nombre", "Provincia") \
         .agg(F.sum("Kilometros").alias("Total_Kilometros")) \
         .filter(col("Total_Kilometros") > 0) \
@@ -461,7 +461,8 @@ def test_ciclistas_sin_actividades(spark_session):
         .orderBy("Provincia")
 
     # Verificar que el resultado esté vacío
-    assert df_top_n.count() == 0  # No debe haber ciclistas en el ranking
+    assert df_top_n.isEmpty()  # No debe haber ciclistas en el ranking
+
 
 
 
