@@ -400,9 +400,7 @@ def test_multiples_provincias(spark_session):
     for expected in expected_rows:
         expected['Top_Ciclistas'] = [(x[0], x[1], x[2]) for x in expected['Top_Ciclistas']]
 
-    # Comparar resultados
-    assert sorted(actual_rows, key=lambda x: x['Provincia']) == sorted(expected_rows, key=lambda x
-
+    assert sorted(actual_rows, key=lambda x: x['Provincia']) == sorted(expected_rows, key=lambda x: x['Provincia'])
 
 
 if __name__ == "__main__":
