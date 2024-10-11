@@ -188,4 +188,5 @@ if __name__ == "__main__":
     spark = spark_session()
     test_top_n_ciclistas_por_km(spark)
     test_promedio_diario_por_provincia(spark)
+    test_empates_en_kilometros(spark)
     print("Todos los tests pasaron correctamente.")
