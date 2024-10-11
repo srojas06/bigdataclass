@@ -1,10 +1,9 @@
 from pyspark.sql import SparkSession
-from pyspark.sql.functions import sum as _sum, avg as _avg, count, col, struct, collect_list, expr, explode,countDistinct, row_number
+from pyspark.sql.functions import sum as _sum, avg as _avg, count, col, struct, collect_list, expr, explode, countDistinct, row_number
 from pyspark.sql.types import StructType, StructField, StringType, IntegerType, FloatType
 import pytest
 from pyspark.sql import functions as F
 from pyspark.sql import Window
-
 
 @pytest.fixture(scope="session")
 def spark_session():
@@ -34,18 +33,18 @@ def test_top_n_ciclistas_por_km(spark_session):
         ['Cedula', 'Nombre', 'Provincia', 'Kilometros']
     )
 
-    # se agrupa por ciclista y provincia, sumando los kilómetros
+    # Se agrupa por ciclista y provincia, sumando los kilómetros
     df_top_n = df_merged.groupBy("Cedula", "Nombre", "Provincia") \
                          .agg(_sum("Kilometros").alias("Kilometros_Totales")) \
                          .orderBy("Provincia", "Kilometros_Totales", ascending=False)
 
-    # se obtiene el top N (en este caso, top 5)
+    # Se obtiene el top N (en este caso, top 5)
     n = 5
     df_top_n_filtered = df_top_n.groupBy("Provincia") \
                                   .agg(collect_list(struct("Cedula", "Nombre", "Kilometros_Totales")).alias("Top_Ciclistas")) \
                                   .withColumn("Top_Ciclistas", expr(f"slice(Top_Ciclistas, 1, {n})"))
 
-    # se ordena el resultado para que el ciclista con mayor km esté primero
+    # Se ordena el resultado para que el ciclista con mayor km esté primero
     df_top_n_sorted = df_top_n_filtered.select(
         "Provincia", 
         explode("Top_Ciclistas").alias("Ciclista")
@@ -56,7 +55,7 @@ def test_top_n_ciclistas_por_km(spark_session):
         "Ciclista.Kilometros_Totales"
     ).orderBy("Provincia", "Ciclista.Kilometros_Totales", ascending=False)
 
-    # datos esperados
+    # Datos esperados
     expected_ds = spark_session.createDataFrame(
         [
             ('San José', 555555555, 'Javier Díaz', 90.0), 
@@ -78,7 +77,6 @@ def test_top_n_ciclistas_por_km(spark_session):
 
     assert sorted(actual_rows, key=lambda x: (x['Provincia'], x['Kilometros_Totales']), reverse=True) == sorted(expected_rows, key=lambda x: (x['Provincia'], x['Kilometros_Totales']), reverse=True)
 
-
 # Test 2 de promedio diario por provincia y vamos hacer el top 3 de mejores ciclistas basandonos en el promedio diario
 def test_promedio_diario_por_provincia(spark_session):
     # Crear un DataFrame con 5 ciclistas por provincia
@@ -98,7 +96,7 @@ def test_promedio_diario_por_provincia(spark_session):
         ['Cedula', 'Nombre', 'Provincia', 'Fecha', 'Kilometros']
     )
 
-    # Calcular total y promedio
+    # se calcula el total y promedio
     df_top_n = df_actividades.groupBy("Cedula", "Nombre", "Provincia") \
         .agg(F.sum("Kilometros").alias("Total_Kilometros"),
              F.countDistinct("Fecha").alias("Dias_Activos")) \
@@ -109,7 +107,7 @@ def test_promedio_diario_por_provincia(spark_session):
         .agg(F.collect_list(struct("Rank", "Nombre", "Promedio_Diario")).alias("Top_Ciclistas")) \
         .orderBy("Provincia")
 
-    # Mostrar resultados
+ 
     print("Top 3 ciclistas por promedio diario con ranking:")
     df_top_n.show()
 
@@ -122,21 +120,18 @@ def test_promedio_diario_por_provincia(spark_session):
         ['Provincia', 'Top_Ciclistas']
     )
 
-    # Comparar resultados
     actual_rows = [row.asDict() for row in df_top_n.collect()]
     expected_rows = [row.asDict() for row in expected_ds.collect()]
 
-    # Asegúrate de que el formato sea correcto
     for actual in actual_rows:
         actual['Top_Ciclistas'] = [(x[0], x[1], x[2]) for x in actual['Top_Ciclistas']]
 
     for expected in expected_rows:
         expected['Top_Ciclistas'] = [(x[0], x[1], x[2]) for x in expected['Top_Ciclistas']]
 
-    # Comparar resultados
     assert sorted(actual_rows, key=lambda x: x['Provincia']) == sorted(expected_rows, key=lambda x: x['Provincia'])
 
-#Test 3 caso de empate
+# Test 3 caso de empate
 def test_empates_en_kilometros(spark_session):
     # Crear un DataFrame con datos de ciclistas que incluye un empate
     df_empates = spark_session.createDataFrame(
@@ -149,7 +144,7 @@ def test_empates_en_kilometros(spark_session):
         ['Cedula', 'Nombre', 'Provincia', 'Fecha', 'Kilometros']
     )
 
-    # Calcular total y promedio
+    # Calcula total y promedio
     df_top_n = df_empates.groupBy("Cedula", "Nombre", "Provincia") \
                           .agg(F.sum("Kilometros").alias("Total_Kilometros"),
                                F.countDistinct("Fecha").alias("Dias_Activos")) \
@@ -160,7 +155,6 @@ def test_empates_en_kilometros(spark_session):
                           .agg(F.collect_list(struct("Rank", "Nombre", "Promedio_Diario")).alias("Top_Ciclistas")) \
                           .orderBy("Provincia")
 
- 
     print("Top ciclistas por promedio diario con ranking:")
     df_top_n.show()
 
@@ -182,10 +176,10 @@ def test_empates_en_kilometros(spark_session):
         expected['Top_Ciclistas'] = [(x[0], x[1], x[2]) for x in expected['Top_Ciclistas']]
 
     assert sorted(actual_rows, key=lambda x: x['Provincia']) == sorted(expected_rows, key=lambda x: x['Provincia'])
-    
-#Test 4 que verifica el ranking  si hay varias actividades en diferentes dias
+
+# Test 4 que verifica el ranking si hay varias actividades en diferentes días
 def test_ranking_por_kilometros_totales(spark_session):
-    # Crear un DataFrame con 8 ciclistas por provincia para hacer el top 5
+    # se crea un DataFrame con 8 ciclistas por provincia para hacer el top 5
     df_actividad = spark_session.createDataFrame(
         [
             (118090887, 'Juan Perez', 'San José', '2024-10-01', 30.0),
@@ -218,7 +212,6 @@ def test_ranking_por_kilometros_totales(spark_session):
         .agg(F.collect_list(struct("Rank", "Nombre", "Total_Kilometros")).alias("Top_Ciclistas")) \
         .orderBy("Provincia")
 
-
     print("Top 5 ciclistas por kilómetros totales con ranking:")
     df_top_n.show()
 
@@ -234,17 +227,15 @@ def test_ranking_por_kilometros_totales(spark_session):
     actual_rows = [row.asDict() for row in df_top_n.collect()]
     expected_rows = [row.asDict() for row in expected_ds.collect()]
 
- 
     for actual in actual_rows:
         actual['Top_Ciclistas'] = [(x[0], x[1], x[2]) for x in actual['Top_Ciclistas']]
 
     for expected in expected_rows:
         expected['Top_Ciclistas'] = [(x[0], x[1], x[2]) for x in expected['Top_Ciclistas']]
 
-
     assert sorted(actual_rows, key=lambda x: x['Provincia']) == sorted(expected_rows, key=lambda x: x['Provincia'])
 
-#Test 5 que verifica si no hay ciclistas
+# Test 5 que verifica si no hay ciclistas
 def test_cero_ciclistas(spark_session):
     schema = StructType([
         StructField('Cedula', IntegerType(), True),
@@ -257,7 +248,7 @@ def test_cero_ciclistas(spark_session):
     # Crea un DataFrame vacío para simular que no hay ciclistas
     df_actividades = spark_session.createDataFrame([], schema)
 
-    # Calcular el top N (en este caso, 5)
+    # se calcula el top N (en este caso, 5)
     n = 5
     df_top_n = df_actividades.groupBy("Cedula", "Nombre", "Provincia") \
         .agg(F.sum("Kilometros").alias("Kilometros_Totales")) \
@@ -270,7 +261,7 @@ def test_cero_ciclistas(spark_session):
     # Verifica que el DataFrame esté vacío
     assert df_top_n_filtered.count() == 0  # No debe haber ciclistas en el ranking
     
-#6 Test de un solo ciclista y dos actividades en diferentes dias
+# Test 6 de un solo ciclista y dos actividades en diferentes dias
 def test_un_solo_ciclista(spark_session):
     # Crear un DataFrame con un solo ciclista
     df_actividades = spark_session.createDataFrame(
@@ -314,7 +305,7 @@ def test_un_solo_ciclista(spark_session):
 
     assert sorted(actual_rows, key=lambda x: x['Provincia']) == sorted(expected_rows, key=lambda x: x['Provincia'])
 
-#7 Test de verificar el ranking en todas las provincias 
+# Test 7 de verificar el ranking en todas las provincias 
 def test_multiples_provincias(spark_session):
     # Crear un DataFrame con ciclistas de 7 provincias
     df_actividades = spark_session.createDataFrame(
@@ -400,10 +391,10 @@ def test_multiples_provincias(spark_session):
 
     assert sorted(actual_rows, key=lambda x: x['Provincia']) == sorted(expected_rows, key=lambda x: x['Provincia'])
 
-    #8 Test de duplicados
-    # Este caso simula un escenario donde se verifica que por un error externo Juan Pérez aparece dos veces en la base de datos
-    # No se considera un duplicado si son dos actividades realizadas en el mismo día.
-    def test_duplicados(spark_session):
+#  Test 8 de duplicados
+# Este caso simula un escenario donde se verifica que por un error externo Juan Pérez aparece dos veces en la base de datos
+# No se considera un duplicado si son dos actividades realizadas en el mismo día.
+def test_duplicados(spark_session):
     df_actividades = spark_session.createDataFrame(
         [
             # Juan Pérez hace dos actividades en el mismo día
@@ -425,7 +416,6 @@ def test_multiples_provincias(spark_session):
         .groupBy("Provincia") \
         .agg(F.collect_list(struct("Rank", "Nombre", "Total_Kilometros")).alias("Top_Ciclistas")) \
         .orderBy("Provincia")
-
 
     print("Top 3 ciclistas por total de kilómetros:")
     df_top_n.show()
@@ -449,8 +439,8 @@ def test_multiples_provincias(spark_session):
 
     assert sorted(actual_rows, key=lambda x: x['Provincia']) == sorted(expected_rows, key=lambda x: x['Provincia'])
 
-#9 Test 0 km , verifica como se maneja en rakning con 0km
-    def test_cero_kilometros(spark_session):
+# Test #9 de  0 km , verifica como se maneja en ranking con 0km
+def test_cero_kilometros(spark_session):
     # Crear un DataFrame con ciclistas que no tienen kilómetros registrados
     df_actividades = spark_session.createDataFrame(
         [
@@ -486,12 +476,11 @@ def test_multiples_provincias(spark_session):
     actual_rows = [row.asDict() for row in df_top_n.collect()]
     expected_rows = [row.asDict() for row in expected_ds.collect()]
 
-
     assert sorted(actual_rows, key=lambda x: x['Provincia']) == sorted(expected_rows, key=lambda x: x['Provincia'])
     
-#10 Test Múltiples Actividades en Días Diferentes
+#  Test #10 de múltiples actividades en dias diferentes
 def test_multiples_actividades_dias_diferentes(spark_session):
-    # se crea un DataFrame con ciclistas y actividades en diferentes dias
+    # Se crea un DataFrame con ciclistas y actividades en diferentes días
     df_actividades = spark_session.createDataFrame(
         [
             # San José
@@ -511,7 +500,7 @@ def test_multiples_actividades_dias_diferentes(spark_session):
         ['Cedula', 'Nombre', 'Provincia', 'Fecha', 'Kilometros']
     )
 
-    # Calcular total de km
+    #  total de km
     df_top_n = df_actividades.groupBy("Cedula", "Nombre", "Provincia") \
         .agg(F.sum("Kilometros").alias("Total_Kilometros")) \
         .withColumn("Rank", F.row_number().over(Window.partitionBy("Provincia").orderBy(F.desc("Total_Kilometros")))) \
@@ -542,8 +531,6 @@ def test_multiples_actividades_dias_diferentes(spark_session):
         expected['Top_Ciclistas'] = [(x[0], x[1], x[2]) for x in expected['Top_Ciclistas']]
 
     assert sorted(actual_rows, key=lambda x: x['Provincia']) == sorted(expected_rows, key=lambda x: x['Provincia'])
-
-
 
 if __name__ == "__main__":
     spark = spark_session()
