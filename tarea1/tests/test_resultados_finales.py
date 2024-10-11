@@ -1,5 +1,6 @@
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import sum as _sum, avg as _avg, count, col, struct, collect_list, expr, explode,countDistinct, row_number
+from pyspark.sql.types import StructType, StructField, StringType, IntegerType, FloatType
 import pytest
 from pyspark.sql import functions as F
 from pyspark.sql import Window
@@ -244,12 +245,21 @@ def test_ranking_por_kilometros_totales(spark_session):
     assert sorted(actual_rows, key=lambda x: x['Provincia']) == sorted(expected_rows, key=lambda x: x['Provincia'])
 
 #Test 5 que verifica si no hay ciclistas
+
 def test_cero_ciclistas(spark_session):
+    # Define el esquema para el DataFrame vacío
+    schema = StructType([
+        StructField('Cedula', IntegerType(), True),
+        StructField('Nombre', StringType(), True),
+        StructField('Provincia', StringType(), True),
+        StructField('Fecha', StringType(), True),
+        StructField('Kilometros', FloatType(), True)
+    ])
+    
     # Crea un DataFrame vacío para simular que no hay ciclistas
-    schema = ['Cedula', 'Nombre', 'Provincia', 'Fecha', 'Kilometros']
     df_actividades = spark_session.createDataFrame([], schema)
 
-    # Calcular el top N (en este caso 5)
+    # Calcular el top N (en este caso, 5)
     n = 5
     df_top_n = df_actividades.groupBy("Cedula", "Nombre", "Provincia") \
         .agg(F.sum("Kilometros").alias("Kilometros_Totales")) \
