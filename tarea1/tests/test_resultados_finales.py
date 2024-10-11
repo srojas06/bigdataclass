@@ -441,7 +441,7 @@ def test_duplicados(spark_session):
 
 # Test #9 de  0 km , verifica como se maneja en ranking con 0km
 def test_cero_kilometros(spark_session):
-    # se crea un DataFrame con ciclistas que tienen cero kilómetros registrados
+    # Crear un DataFrame con ciclistas que tienen cero kilómetros registrados
     df_actividades = spark_session.createDataFrame(
         [
             (118090887, 'Juan Perez', 'San José', '2024-10-01', 0.0),  # Cero kilómetros
@@ -453,7 +453,7 @@ def test_cero_kilometros(spark_session):
         ['Cedula', 'Nombre', 'Provincia', 'Fecha', 'Kilometros']
     )
 
-    # se calcula total y se crea ranking
+    # se calcula el total y se crea ranking
     df_top_n = df_actividades.groupBy("Cedula", "Nombre", "Provincia") \
         .agg(F.sum("Kilometros").alias("Total_Kilometros")) \
         .withColumn("Rank", F.row_number().over(Window.partitionBy("Provincia").orderBy(F.desc("Total_Kilometros")))) \
@@ -465,18 +465,8 @@ def test_cero_kilometros(spark_session):
     print("Top 3 ciclistas por total de kilómetros (todos con cero kilómetros):")
     df_top_n.show()
 
-    # Datos esperados para el top 3 con ranking, deben estar vacíos ya que todos tienen cero kilómetros
-    expected_ds = spark_session.createDataFrame(
-        [
-            ('San José', None),  # No hay ciclistas en el ranking
-        ],
-        ['Provincia', 'Top_Ciclistas']
-    )
-
-    actual_rows = [row.asDict() for row in df_top_n.collect()]
-    expected_rows = [row.asDict() for row in expected_ds.collect()]
-
-    assert sorted(actual_rows, key=lambda x: x['Provincia']) == sorted(expected_rows, key=lambda x: x['Provincia'])
+    # Verificar que el resultado está vacío
+    assert df_top_n.count() == 0  # No debe haber ciclistas en el ranking
 
 
     
