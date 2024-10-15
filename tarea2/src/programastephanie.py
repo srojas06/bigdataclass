@@ -12,16 +12,14 @@ spark = SparkSession.builder.appName("Tarea2BigData").getOrCreate()
 # Deshabilitar los logs innecesarios de Spark
 spark.sparkContext.setLogLevel("ERROR")
 
-# Expandir el patrón 'caja*.yaml' para obtener todos los archivos
-archivos_yamls = []
-for argumento in sys.argv[1:]:
-    archivos_yamls.extend(glob.glob(os.path.join("data", argumento)))
+# Expandir el patrón 'caja*.yaml' automáticamente
+archivos_yamls = glob.glob(os.path.join("..", "data", "caja*.yaml"))
 
 if len(archivos_yamls) == 0:
-    print("No se encontraron archivos YAML con el patrón proporcionado.")
+    print("No se encontraron archivos YAML en el directorio especificado.")
     sys.exit(1)
 
-# Crear una lista de DataFrames a partir de los archivos YAML proporcionados
+# Crear una lista de DataFrames a partir de los archivos YAML encontrados
 dataframes = []
 for ruta in archivos_yamls:
     datos_yaml = funciones.leer_archivo_yml(ruta)
