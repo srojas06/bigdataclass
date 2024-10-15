@@ -1,4 +1,5 @@
 from pyspark.sql import SparkSession
+import pyspark.sql.functions as F  # Agregar esta línea para importar las funciones de PySpark
 import funciones  # Importar las funciones desde el archivo funciones.py
 
 # Crear la sesión de Spark
@@ -50,4 +51,3 @@ funciones.guardar_metricas(caja_con_mas_ventas, caja_con_menos_ventas, percentil
 
 # Finalizar la sesión de Spark
 spark.stop()
-
