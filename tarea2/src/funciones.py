@@ -65,5 +65,5 @@ def guardar_metricas(caja_con_mas_ventas, caja_con_menos_ventas, percentil_25, p
 
     df_metricas = spark.createDataFrame(metricas)
 
-    # Guardar en una carpeta llamada "metricas" con un solo archivo
-    df_metricas.coalesce(1).write.mode("overwrite").csv("/src/output/metricas", header=Tru
+      # Guardar en una carpeta llamada "metricas" con un solo archivo
+    df_metricas.coalesce(1).write.mode("overwrite").csv("/src/output/metricas", header=True)
