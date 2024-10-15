@@ -3,7 +3,7 @@ import sys
 import shutil
 from pyspark.sql import SparkSession
 import pyspark.sql.functions as F
-import funciones  # importar las funciones desde el archivo funciones.py
+import funciones  # importa las funciones desde el archivo funciones.py
 
 # crea la sesión de Spark
 spark = SparkSession.builder.appName("Tarea2BigData").getOrCreate()
