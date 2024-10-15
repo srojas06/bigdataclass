@@ -1,0 +1,90 @@
+- '- numero_caja': 1
+- '- compras':
+  - '- compra':
+    - '- nombre': manzana
+      cantidad: 4
+      precio_unitario: 4751
+    - '- nombre': pasta
+      cantidad: 10
+      precio_unitario: 3883
+    - '- nombre': papas
+      cantidad: 1
+      precio_unitario: 2551
+  - '- compra':
+    - '- nombre': manzana
+      cantidad: 2
+      precio_unitario: 3119
+    - '- nombre': leche
+      cantidad: 4
+      precio_unitario: 568
+  - '- compra':
+    - '- nombre': refresco
+      cantidad: 3
+      precio_unitario: 340
+    - '- nombre': detergente
+      cantidad: 4
+      precio_unitario: 2697
+  - '- compra':
+    - '- nombre': manzana
+      cantidad: 10
+      precio_unitario: 1517
+    - '- nombre': leche
+      cantidad: 10
+      precio_unitario: 2499
+    - '- nombre': leche
+      cantidad: 10
+      precio_unitario: 2876
+    - '- nombre': leche
+      cantidad: 1
+      precio_unitario: 3408
+  - '- compra':
+    - '- nombre': manzana
+      cantidad: 6
+      precio_unitario: 1563
+    - '- nombre': arroz
+      cantidad: 3
+      precio_unitario: 1418
+  - '- compra':
+    - '- nombre': arroz
+      cantidad: 3
+      precio_unitario: 2405
+  - '- compra':
+    - '- nombre': pasta
+      cantidad: 9
+      precio_unitario: 2004
+    - '- nombre': leche
+      cantidad: 10
+      precio_unitario: 3737
+    - '- nombre': leche
+      cantidad: 3
+      precio_unitario: 4537
+    - '- nombre': jugo
+      cantidad: 10
+      precio_unitario: 4864
+  - '- compra':
+    - '- nombre': manzana
+      cantidad: 1
+      precio_unitario: 1802
+    - '- nombre': leche
+      cantidad: 8
+      precio_unitario: 4810
+    - '- nombre': galletas
+      cantidad: 10
+      precio_unitario: 2659
+    - '- nombre': galletas
+      cantidad: 7
+      precio_unitario: 3496
+  - '- compra':
+    - '- nombre': leche
+      cantidad: 7
+      precio_unitario: 4143
+    - '- nombre': papas
+      cantidad: 9
+      precio_unitario: 4649
+  - '- compra':
+    - '- nombre': jugo
+      cantidad: 6
+      precio_unitario: 2230
+    - '- nombre': detergente
+      cantidad: 10
+      precio_unitario: 4699

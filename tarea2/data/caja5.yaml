@@ -1,0 +1,105 @@
+- '- numero_caja': 5
+- '- compras':
+  - '- compra':
+    - '- nombre': refresco
+      cantidad: 2
+      precio_unitario: 851
+  - '- compra':
+    - '- nombre': cerveza
+      cantidad: 8
+      precio_unitario: 1406
+    - '- nombre': detergente
+      cantidad: 3
+      precio_unitario: 3872
+    - '- nombre': pasta
+      cantidad: 5
+      precio_unitario: 3697
+    - '- nombre': galletas
+      cantidad: 3
+      precio_unitario: 1694
+  - '- compra':
+    - '- nombre': jugo
+      cantidad: 1
+      precio_unitario: 4900
+    - '- nombre': arroz
+      cantidad: 3
+      precio_unitario: 2071
+    - '- nombre': jugo
+      cantidad: 9
+      precio_unitario: 4399
+    - '- nombre': cerveza
+      cantidad: 9
+      precio_unitario: 2172
+  - '- compra':
+    - '- nombre': arroz
+      cantidad: 10
+      precio_unitario: 1437
+    - '- nombre': galletas
+      cantidad: 7
+      precio_unitario: 3988
+  - '- compra':
+    - '- nombre': galletas
+      cantidad: 2
+      precio_unitario: 1758
+    - '- nombre': pasta
+      cantidad: 10
+      precio_unitario: 2014
+  - '- compra':
+    - '- nombre': pasta
+      cantidad: 6
+      precio_unitario: 671
+  - '- compra':
+    - '- nombre': arroz
+      cantidad: 4
+      precio_unitario: 216
+    - '- nombre': leche
+      cantidad: 9
+      precio_unitario: 1590
+    - '- nombre': refresco
+      cantidad: 5
+      precio_unitario: 2235
+    - '- nombre': refresco
+      cantidad: 4
+      precio_unitario: 1413
+    - '- nombre': papas
+      cantidad: 4
+      precio_unitario: 1945
+  - '- compra':
+    - '- nombre': detergente
+      cantidad: 5
+      precio_unitario: 4713
+    - '- nombre': jugo
+      cantidad: 4
+      precio_unitario: 806
+    - '- nombre': galletas
+      cantidad: 1
+      precio_unitario: 439
+    - '- nombre': galletas
+      cantidad: 4
+      precio_unitario: 2737
+    - '- nombre': pasta
+      cantidad: 10
+      precio_unitario: 1077
+  - '- compra':
+    - '- nombre': jugo
+      cantidad: 7
+      precio_unitario: 193
+    - '- nombre': cerveza
+      cantidad: 5
+      precio_unitario: 4180
+    - '- nombre': manzana
+      cantidad: 10
+      precio_unitario: 2814
+    - '- nombre': pasta
+      cantidad: 8
+      precio_unitario: 1715
+    - '- nombre': detergente
+      cantidad: 5
+      precio_unitario: 2599
+  - '- compra':
+    - '- nombre': galletas
+      cantidad: 3
+      precio_unitario: 4284
+    - '- nombre': refresco
+      cantidad: 7
+      precio_unitario: 636
