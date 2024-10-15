@@ -7,6 +7,10 @@ import funciones  # Importar las funciones desde el archivo funciones.py
 # Crear la sesión de Spark
 spark = SparkSession.builder.appName("Tarea2BigData").getOrCreate()
 
+# Deshabilitar los logs innecesarios de Spark
+spark.sparkContext.setLogLevel("ERROR")
+
+
 # Lista de rutas específicas para los archivos YAML
 archivos_yamls = [
     "/src/data/caja1.yaml",
