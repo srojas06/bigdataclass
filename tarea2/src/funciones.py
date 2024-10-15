@@ -2,7 +2,7 @@ import yaml
 from pyspark.sql import functions as F
 from pyspark.sql import Row
 
-# funcion para leer un archivo YAML y convertirlo a datos 
+# Función para leer un archivo YAML y convertirlo a datos en formato dict
 def leer_archivo_yml(ruta):
     with open(ruta, 'r') as archivo:
         return yaml.safe_load(archivo)
@@ -20,27 +20,29 @@ def convertir_a_dataframe(dato_yaml, spark):
             })
     return spark.createDataFrame(compras)
 
-# función para calcular las métricas de las ventas por caja
+# Función para calcular las métricas de las ventas por caja
 def calcular_metricas(df_final):
     # Caja con más ventas
-    caja_con_mas_ventas = df_final.orderBy(F.col("total_venta").desc()).first()["numero_caja"]
+    caja_con_mas_ventas = df_final.groupBy("numero_caja").agg(F.sum("total_venta").alias("total_vendido")).orderBy(F.col("total_vendido").desc()).first()["numero_caja"]
     # Caja con menos ventas
-    caja_con_menos_ventas = df_final.orderBy(F.col("total_venta").asc()).first()["numero_caja"]
+    caja_con_menos_ventas = df_final.groupBy("numero_caja").agg(F.sum("total_venta").alias("total_vendido")).orderBy(F.col("total_vendido").asc()).first()["numero_caja"]
 
     # Percentiles 25, 50 y 75
     percentil_25, percentil_50, percentil_75 = calcular_percentiles(df_final)
 
     return caja_con_mas_ventas, caja_con_menos_ventas, percentil_25, percentil_50, percentil_75
 
-# función para calcular los percentiles de las ventas
+# Función para calcular los percentiles de las ventas
 def calcular_percentiles(df_final):
-    percentil_25 = df_final.selectExpr("percentile_approx(total_venta, 0.25)").first()[0]
-    percentil_50 = df_final.selectExpr("percentile_approx(total_venta, 0.50)").first()[0]
-    percentil_75 = df_final.selectExpr("percentile_approx(total_venta, 0.75)").first()[0]
+    total_por_caja = df_final.groupBy("numero_caja").agg(F.sum("total_venta").alias("total_vendido"))
+
+    percentil_25 = total_por_caja.selectExpr("percentile_approx(total_vendido, 0.25)").first()[0]
+    percentil_50 = total_por_caja.selectExpr("percentile_approx(total_vendido, 0.50)").first()[0]
+    percentil_75 = total_por_caja.selectExpr("percentile_approx(total_vendido, 0.75)").first()[0]
     
     return percentil_25, percentil_50, percentil_75
 
-# función para calcular el producto más vendido y el de mayor ingreso
+# Función para calcular el producto más vendido y el de mayor ingreso
 def calcular_productos(df_final):
     # Producto más vendido
     producto_mas_vendido = df_final.groupBy("nombre_producto").agg(F.sum("cantidad").alias("total_vendido")).orderBy(F.col("total_vendido").desc()).first()["nombre_producto"]
@@ -49,7 +51,7 @@ def calcular_productos(df_final):
 
     return producto_mas_vendido, producto_mayor_ingreso
 
-# función para guardar las métricas en CSV
+# Función para guardar las métricas en CSV
 def guardar_metricas(caja_con_mas_ventas, caja_con_menos_ventas, percentil_25, percentil_50, percentil_75, producto_mas_vendido, producto_mayor_ingreso, spark):
     metricas = [
         Row(metrica="caja_con_mas_ventas", valor=caja_con_mas_ventas),
@@ -62,5 +64,6 @@ def guardar_metricas(caja_con_mas_ventas, caja_con_menos_ventas, percentil_25, p
     ]
 
     df_metricas = spark.createDataFrame(metricas)
-    df_metricas.write.mode("overwrite").csv("/src/output/metricas.csv", header=True)
 
+    # Guardar en una carpeta llamada "metricas" con un solo archivo
+    df_metricas.coalesce(1).write.mode("overwrite").csv("/src/output/metricas", header=True)
