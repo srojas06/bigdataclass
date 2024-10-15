@@ -1,6 +1,7 @@
 import sys
 import os
 import shutil
+import glob
 from pyspark.sql import SparkSession
 import pyspark.sql.functions as F
 import funciones  # Importar las funciones desde el archivo funciones.py
@@ -16,11 +17,14 @@ if len(sys.argv) < 2:
     print("Por favor, proporciona al menos un archivo YAML como argumento.")
     sys.exit(1)
 
-# Obtener los archivos YAML pasados como argumentos
-archivos_yamls = sys.argv[1:]  # Esto obtiene todos los archivos YAML pasados como argumento
+# Expandir el patrón 'caja*.yaml' para obtener todos los archivos
+archivos_yamls = []
+for argumento in sys.argv[1:]:
+    archivos_yamls.extend(glob.glob(os.path.join("data", argumento)))
 
-# Añadir la ruta relativa 'data/' a cada archivo YAML si solo se pasa el nombre
-archivos_yamls = [os.path.join("data", archivo) for archivo in archivos_yamls]
+if len(archivos_yamls) == 0:
+    print("No se encontraron archivos YAML con el patrón proporcionado.")
+    sys.exit(1)
 
 # Crear una lista de DataFrames a partir de los archivos YAML proporcionados
 dataframes = []
