@@ -1,70 +1,69 @@
-from pyspark.sql import SparkSession
-import pyspark.sql.functions as F
-import funciones  # Importar las funciones desde el archivo funciones.py
+import yaml
+from pyspark.sql import functions as F
+from pyspark.sql import Row
 
-# Crear la sesión de Spark
-spark = SparkSession.builder.appName("Tarea2BigData").getOrCreate()
+# Función para leer un archivo YAML y convertirlo a datos en formato dict
+def leer_archivo_yml(ruta):
+    with open(ruta, 'r') as archivo:
+        return yaml.safe_load(archivo)
 
-# Lista de rutas específicas para los archivos YAML
-archivos_yamls = [
-    "/src/data/caja1.yaml",
-    "/src/data/caja2.yaml",
-    "/src/data/caja3.yaml",
-    "/src/data/caja4.yaml",
-    "/src/data/caja5.yaml"
-]
+# Función para convertir el dict de YAML en un DataFrame de Spark
+def convertir_a_dataframe(dato_yaml, spark):
+    compras = []
+    for compra in dato_yaml[1]["- compras"]:
+        for producto in compra["- compra"]:
+            compras.append({
+                "numero_caja": dato_yaml[0]["- numero_caja"],
+                "nombre_producto": producto["- nombre"],
+                "cantidad": producto["cantidad"],
+                "precio_unitario": producto["precio_unitario"]
+            })
+    return spark.createDataFrame(compras)
 
-# Crear una lista de DataFrames
-dataframes = []
-for ruta in archivos_yamls:
-    datos_yaml = funciones.leer_archivo_yml(ruta)
-    df = funciones.convertir_a_dataframe(datos_yaml, spark)
-    dataframes.append(df)
+# Función para calcular las métricas de las ventas por caja
+def calcular_metricas(df_final):
+    # Caja con más ventas
+    caja_con_mas_ventas = df_final.groupBy("numero_caja").agg(F.sum("total_venta").alias("total_vendido")).orderBy(F.col("total_vendido").desc()).first()["numero_caja"]
+    # Caja con menos ventas
+    caja_con_menos_ventas = df_final.groupBy("numero_caja").agg(F.sum("total_venta").alias("total_vendido")).orderBy(F.col("total_vendido").asc()).first()["numero_caja"]
 
-# Unir todos los DataFrames en uno solo
-df_final = dataframes[0]
-for df in dataframes[1:]:
-    df_final = df_final.union(df)
+    # Percentiles 25, 50 y 75
+    percentil_25, percentil_50, percentil_75 = calcular_percentiles(df_final)
 
-# Crear la columna total_venta (cantidad * precio_unitario)
-df_final = df_final.withColumn("total_venta", F.col("cantidad") * F.col("precio_unitario"))
+    return caja_con_mas_ventas, caja_con_menos_ventas, percentil_25, percentil_50, percentil_75
 
-# Calcular el total de productos vendidos
-total_productos = df_final.groupBy("nombre_producto").agg(F.sum("cantidad").alias("cantidad_total"))
+# Función para calcular los percentiles de las ventas
+def calcular_percentiles(df_final):
+    total_por_caja = df_final.groupBy("numero_caja").agg(F.sum("total_venta").alias("total_vendido"))
 
-# Mostrar el total de productos vendidos en el CMD
-print("\n--- Total de productos vendidos ---")
-total_productos.show()
+    percentil_25 = total_por_caja.selectExpr("percentile_approx(total_vendido, 0.25)").first()[0]
+    percentil_50 = total_por_caja.selectExpr("percentile_approx(total_vendido, 0.50)").first()[0]
+    percentil_75 = total_por_caja.selectExpr("percentile_approx(total_vendido, 0.75)").first()[0]
+    
+    return percentil_25, percentil_50, percentil_75
 
-# Calcular el total de ventas por caja
-total_cajas = df_final.groupBy("numero_caja").agg(F.sum("total_venta").alias("total_vendido"))
+# Función para calcular el producto más vendido y el de mayor ingreso
+def calcular_productos(df_final):
+    # Producto más vendido
+    producto_mas_vendido = df_final.groupBy("nombre_producto").agg(F.sum("cantidad").alias("total_vendido")).orderBy(F.col("total_vendido").desc()).first()["nombre_producto"]
+    # Producto que generó más ingresos
+    producto_mayor_ingreso = df_final.groupBy("nombre_producto").agg(F.sum(F.col("cantidad") * F.col("precio_unitario")).alias("total_ingresos")).orderBy(F.col("total_ingresos").desc()).first()["nombre_producto"]
 
-# Mostrar el total vendido por caja en el CMD
-print("\n--- Total vendido por caja ---")
-total_cajas.show()
+    return producto_mas_vendido, producto_mayor_ingreso
 
-# Calcular las métricas
-caja_con_mas_ventas, caja_con_menos_ventas, percentil_25, percentil_50, percentil_75 = funciones.calcular_metricas(df_final)
-producto_mas_vendido, producto_mayor_ingreso = funciones.calcular_productos(df_final)
+# Función para guardar las métricas en CSV
+def guardar_metricas(caja_con_mas_ventas, caja_con_menos_ventas, percentil_25, percentil_50, percentil_75, producto_mas_vendido, producto_mayor_ingreso, spark):
+    metricas = [
+        Row(metrica="caja_con_mas_ventas", valor=caja_con_mas_ventas),
+        Row(metrica="caja_con_menos_ventas", valor=caja_con_menos_ventas),
+        Row(metrica="percentil_25_por_caja", valor=percentil_25),
+        Row(metrica="percentil_50_por_caja", valor=percentil_50),
+        Row(metrica="percentil_75_por_caja", valor=percentil_75),
+        Row(metrica="producto_mas_vendido_por_unidad", valor=producto_mas_vendido),
+        Row(metrica="producto_de_mayor_ingreso", valor=producto_mayor_ingreso)
+    ]
 
-# Mostrar las métricas en el CMD
-print("\n--- Métricas ---")
-print(f"Caja con más ventas: {caja_con_mas_ventas}")
-print(f"Caja con menos ventas: {caja_con_menos_ventas}")
-print(f"Percentil 25: {percentil_25}")
-print(f"Percentil 50 (Mediana): {percentil_50}")
-print(f"Percentil 75: {percentil_75}")
-print(f"Producto más vendido: {producto_mas_vendido}")
-print(f"Producto de mayor ingreso: {producto_mayor_ingreso}")
+    df_metricas = spark.createDataFrame(metricas)
 
-# Guardar los resultados de total_productos en una carpeta y un archivo
-total_productos.coalesce(1).write.mode("overwrite").csv("/src/output/total_productos", header=True)
-
-# Guardar los resultados de total_cajas en una carpeta y un archivo
-total_cajas.coalesce(1).write.mode("overwrite").csv("/src/output/total_cajas", header=True)
-
-# Guardar las métricas en la carpeta "metricas" con un solo archivo
-funciones.guardar_metricas(caja_con_mas_ventas, caja_con_menos_ventas, percentil_25, percentil_50, percentil_75, producto_mas_vendido, producto_mayor_ingreso, spark)
-
-# Finalizar la sesión de Spark
-spark.stop()
+    # Guardar en una carpeta llamada "metricas" con un solo archivo
+    df_metricas.coalesce(1).write.mode("overwrite").csv("/src/output/metricas", header=True)
