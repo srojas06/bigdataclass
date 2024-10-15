@@ -1,29 +1,10 @@
-import yaml
 from pyspark.sql import SparkSession
-from pyspark.sql import functions as F
+import funciones 
 
-# Crear la sesión de Spark
+# creamos la sesión de spark
 spark = SparkSession.builder.appName("Tarea2BigData").getOrCreate()
 
-# Función para leer archivos YAML
-def leer_archivo_yml(ruta):
-    with open(ruta, 'r') as archivo:
-        return yaml.safe_load(archivo)
-
-# Función para convertir los datos YAML a un DataFrame de Spark
-def convertir_a_dataframe(dato_yaml):
-    compras = []
-    for compra in dato_yaml[1]["- compras"]:
-        for producto in compra["- compra"]:
-            compras.append({
-                "numero_caja": dato_yaml[0]["- numero_caja"],
-                "nombre_producto": producto["- nombre"],
-                "cantidad": producto["cantidad"],
-                "precio_unitario": producto["precio_unitario"]
-            })
-    return spark.createDataFrame(compras)
-
-# Lista de rutas específicas para los archivos YAML
+# rutas específicas para los archivos YAML
 archivos_yamls = [
     "/src/data/caja1.yaml",
     "/src/data/caja2.yaml",
@@ -32,40 +13,49 @@ archivos_yamls = [
     "/src/data/caja5.yaml"
 ]
 
-# Crear una lista de DataFrames
+# creamos una lista de dataFrames
 dataframes = []
 for ruta in archivos_yamls:
-    datos_yaml = leer_archivo_yml(ruta)
-    df = convertir_a_dataframe(datos_yaml)
+    datos_yaml = funciones.leer_archivo_yml(ruta)
+    df = funciones.convertir_a_dataframe(datos_yaml, spark)
     dataframes.append(df)
 
-# Unir todos los DataFrames en uno solo
+#unimos los dataframes
 df_final = dataframes[0]
 for df in dataframes[1:]:
     df_final = df_final.union(df)
 
-# Calcular el total vendido por producto
-total_productos = df_final.groupBy("nombre_producto").agg(F.sum("cantidad").alias("total_vendido"))
-total_productos.show()
+# calculamos las métricas
+caja_con_mas_ventas, caja_con_menos_ventas, percentil_25, percentil_50, percentil_75 = funciones.calcular_metricas(df_final)
+producto_mas_vendido, producto_mayor_ingreso = funciones.calcular_productos(df_final)
 
-# Calcular el total de ventas por caja
-df_final = df_final.withColumn("total_venta", F.col("cantidad") * F.col("precio_unitario"))
-total_cajas = df_final.groupBy("numero_caja").agg(F.sum("total_venta").alias("total_vendido"))
-total_cajas.show()
+# mostramos los datos en el cmd
+print(f"Caja con más ventas: {caja_con_mas_ventas}")
+print(f"Caja con menos ventas: {caja_con_menos_ventas}")
+print(f"Percentil 25: {percentil_25}")
+print(f"Percentil 50 (Mediana): {percentil_50}")
+print(f"Percentil 75: {percentil_75}")
+print(f"Producto más vendido: {producto_mas_vendido}")
+print(f"Producto de mayor ingreso: {producto_mayor_ingreso}")
 
-# Calcular las métricas de percentiles
-percentiles = df_final.selectExpr(
-    "percentile_approx(total_venta, 0.25) as percentil_25",
-    "percentile_approx(total_venta, 0.50) as percentil_50",
-    "percentile_approx(total_venta, 0.75) as percentil_75"
-)
-percentiles.show()
+# guardamos los resultadoos  en CSV, usamos "overwrite" para sobrescribir los archivos existentes
+df_final.write.mode("overwrite").csv("/src/output/total_productos.csv", header=True)
+df_final.write.mode("overwrite").csv("/src/output/total_cajas.csv", header=True)
 
-# Guardar los resultados en archivos CSV
-total_productos.write.csv("/src/output/total_productos.csv", header=True)
-total_cajas.write.csv("/src/output/total_cajas.csv", header=True)
-percentiles.write.csv("/src/output/metricas.csv", header=True)
+# guardamos las métricas
+from pyspark.sql import Row
+metricas = [
+    Row(metrica="caja_con_mas_ventas", valor=caja_con_mas_ventas),
+    Row(metrica="caja_con_menos_ventas", valor=caja_con_menos_ventas),
+    Row(metrica="percentil_25_por_caja", valor=percentil_25),
+    Row(metrica="percentil_50_por_caja", valor=percentil_50),
+    Row(metrica="percentil_75_por_caja", valor=percentil_75),
+    Row(metrica="producto_mas_vendido_por_unidad", valor=producto_mas_vendido),
+    Row(metrica="producto_de_mayor_ingreso", valor=producto_mayor_ingreso)
+]
 
-# Finalizar la sesión de Spark
+df_metricas = spark.createDataFrame(metricas)
+df_metricas.write.mode("overwrite").csv("/src/output/metricas.csv", header=True)
+
 spark.stop()
 
