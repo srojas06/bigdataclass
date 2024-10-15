@@ -11,7 +11,7 @@ spark = SparkSession.builder.appName("Tarea2BigData").getOrCreate()
 
 spark.sparkContext.setLogLevel("ERROR")
 
-# verificar que se hayan pasado los archivos YAML como argumentos
+# verifica que se hayan pasado los archivos YAML como argumentos
 if len(sys.argv) < 2:
     print("por favor proporciona al menos un archivo yaml como argumento")
     sys.exit(1)
@@ -19,7 +19,7 @@ if len(sys.argv) < 2:
 # obtiene los archivos yaml como argumentos
 archivos_yamls = sys.argv[1:] 
 
-#  crear una lista de dataframes a partir de los archivos yaml proporcionados
+#  crea una lista de dataframes a partir de los archivos yaml proporcionados
 dataframes = []
 for ruta in archivos_yamls:
     datos_yaml = funciones.leer_archivo_yml(ruta)
@@ -31,7 +31,7 @@ df_final = dataframes[0]
 for df in dataframes[1:]:
     df_final = df_final.union(df)
 
-# se cvrea la columna total_venta (cantidad * precio_unitario)
+# se crea la columna total_venta (cantidad * precio_unitario)
 df_final = df_final.withColumn("total_venta", F.col("cantidad") * F.col("precio_unitario"))
 
 # se calcula el total de productos vendidos
@@ -66,7 +66,7 @@ df_metricas = spark.createDataFrame(metricas_data, ["Métrica", "Valor"])
 print("\n--- Métricas ---")
 df_metricas.show()
 
-# elimna la carpñeta si ya existe para que asi se pueda sobrescribir en cada corrida
+# elimna la carpeta si ya existe para que asi se pueda sobrescribir en cada corrida
 def eliminar_carpeta_si_existe(ruta_carpeta):
     if os.path.exists(ruta_carpeta):
         shutil.rmtree(ruta_carpeta)
