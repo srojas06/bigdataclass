@@ -12,11 +12,6 @@ spark = SparkSession.builder.appName("Tarea2BigData").getOrCreate()
 # Deshabilitar los logs innecesarios de Spark
 spark.sparkContext.setLogLevel("ERROR")
 
-# Verificar que se hayan pasado los archivos YAML como argumentos
-if len(sys.argv) < 2:
-    print("Por favor, proporciona al menos un archivo YAML como argumento.")
-    sys.exit(1)
-
 # Expandir el patrón 'caja*.yaml' para obtener todos los archivos
 archivos_yamls = []
 for argumento in sys.argv[1:]:
