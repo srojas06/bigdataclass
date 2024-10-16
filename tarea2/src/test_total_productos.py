@@ -114,14 +114,18 @@ def test_total_productos_nombres_largos():
     assert resultado.collect() == esperado
     
 # 10. Prueba con productos con cantidades cero
-def test_total_productos_con_cantidades_cero():
-    data = [("manzana", 10), ("pera", 0), ("pasta", 5), ("naranja", 0)]
+def test_total_productos_con_nulos():
+    # Creamos un dataframe con productos, incluyendo valores nulos
+    data = [("manzana", 10), (None, 5), ("pera", None)]
     df = spark.createDataFrame(data, ["nombre_producto", "cantidad"])
 
+    # Llamamos a la función que calculará el total de productos
     resultado = funciones.calcular_total_productos(df)
 
-    esperado = [("manzana", 10), ("pasta", 5)]  # Se ignoran "pera" y "naranja"
+    # Esperamos que solo el producto "manzana" tenga un valor válido
+    esperado = [("manzana", 10)]
 
+    # Comprobamos que el resultado sea el esperado
     assert resultado.collect() == esperado
 
 
