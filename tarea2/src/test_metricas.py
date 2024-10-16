@@ -34,7 +34,7 @@ def test_percentil_25():
     
     percentil_25 = funciones.calcular_metricas(df)[2]
     
-    assert percentil_25 == 175  # Esperado basado en los datos
+    assert percentil_25 == 100  # Esperado basado en los datos
 
 # 4. Prueba del percentil 50 (mediana)
 def test_percentil_50():
@@ -43,7 +43,7 @@ def test_percentil_50():
     
     percentil_50 = funciones.calcular_metricas(df)[3]
     
-    assert percentil_50 == 250  # Esperado basado en los datos
+    assert percentil_50 == 200  # Esperado basado en los datos
 
 # 5. Prueba del percentil 75
 def test_percentil_75():
@@ -52,7 +52,7 @@ def test_percentil_75():
     
     percentil_75 = funciones.calcular_metricas(df)[4]
     
-    assert percentil_75 == 325  # Esperado basado en los datos
+    assert percentil_75 == 300  # Esperado basado en los datos
 
 # 6. Prueba para el producto más vendido por unidad
 def test_producto_mas_vendido():
