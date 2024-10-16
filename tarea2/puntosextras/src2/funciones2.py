@@ -1,4 +1,5 @@
 import psycopg2
+import yaml
 from pyspark.sql import functions as F
 from pyspark.sql import Row
 
@@ -9,14 +10,15 @@ def conectar_base_de_datos():
             port="5433",
             database="postgres",
             user="postgres",
-            password="testPassword"
+            password="testPassword",
+            connect_timeout=5  # Esto ayudará a detectar problemas de conexión más rápidamente
         )
         print("Conexión exitosa a la base de datos.")
         return conn
     except Exception as e:
         print(f"Error al conectar a la base de datos: {e}")
         return None
-
+        
 def leer_archivo_yml(ruta):
     with open(ruta, 'r') as archivo:
         return yaml.safe_load(archivo)
