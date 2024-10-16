@@ -12,7 +12,7 @@ spark = SparkSession.builder.appName("PuntosExtrasBigData").getOrCreate()
 spark.sparkContext.setLogLevel("ERROR")
 
 # Verificar si el archivo YAML se ha proporcionado como argumento
-if len(sys.argv) < 2:
+if len(sys.argv) < 6:
     print("Uso: programamain.py <ruta_archivo_yaml> <host> <usuario> <password> <nombre_bd>")
     sys.exit(1)
 
@@ -76,21 +76,20 @@ try:
     ''')
 
     # Insertar los datos de las métricas en la tabla
-    for row in metricas_data:
-        cursor.execute(
-            "INSERT INTO metricas (metrica, valor, fecha) VALUES (%s, %s, %s)",
-            (row[0], row[1], row[2])
-        )
+    cursor.executemany(
+        "INSERT INTO metricas (metrica, valor, fecha) VALUES (%s, %s, %s)",
+        metricas_data
+    )
 
     # Confirmar los cambios
     conexion.commit()
 
 except (Exception, psycopg2.Error) as error:
-    print("Error al conectar a la base de datos PostgreSQL", error)
+    print("Error al conectar a la base de datos PostgreSQL:", error)
 
 finally:
     # Cerrar la conexión a la base de datos
-    if conexion:
+    if 'conexion' in locals() and conexion:
         cursor.close()
         conexion.close()
         print("Conexión a PostgreSQL cerrada")
