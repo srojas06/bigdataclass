@@ -12,7 +12,8 @@ RUN apk add --no-cache \
     py3-pip \
     gcc \
     musl-dev \
-    postgresql-dev && \
+    postgresql-dev \
+    procps && \  # Añadir procps para tener la versión completa del comando ps
     pip3 install --upgrade pip && \
     pip3 install pyspark pytest pyyaml psycopg2-binary && \
     ln -s /usr/bin/python3 /usr/bin/python
@@ -20,4 +21,3 @@ RUN apk add --no-cache \
 WORKDIR /src
 
 COPY . /src
-
