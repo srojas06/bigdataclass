@@ -1,30 +1,19 @@
-# Usar una imagen base con Java 14 para Apache Spark
 FROM openjdk:14-alpine
 
-# Establecer el valor de la variable JAVA_HOME
-ENV JAVA_HOME=/usr/lib/jvm/java-14-openjdk
-ENV PATH="${JAVA_HOME}/bin:${PATH}"
+ENV SPARK_HOME=/usr/lib/python3.7/site-packages/pyspark
 
-# Definir el directorio donde se ejecutará el contenedor
+RUN apk add bash && \
+  apk add nano && \
+  apk add postgresql-client && \
+  apk add python3 && \
+  apk add gcc musl-dev postgresql-dev && \  # Necesario para compilar psycopg2
+  pip3 install --upgrade pip && \
+  pip3 install pyspark && \
+  pip3 install pytest && \
+  pip3 install pyyaml && \
+  pip3 install psycopg2-binary && \  # Instalar psycopg2
+  ln /usr/bin/python3.7 /usr/bin/python
+
 WORKDIR /src
 
-# Instalar las dependencias necesarias
-RUN apk add --no-cache \
-    bash \
-    nano \
-    postgresql-client \
-    python3 \
-    py3-pip \
-    gcc \
-    musl-dev \
-    postgresql-dev \
-    openjdk14 && \
-    pip3 install --upgrade pip && \
-    pip3 install pyspark pytest pyyaml psycopg2-binary && \
-    ln -s /usr/bin/python3 /usr/bin/python
-
-# Copiar todos los archivos al directorio de trabajo del contenedor
 COPY . /src
-
-# Definir el comando de inicio por defecto (bash)
-CMD ["bash"]
