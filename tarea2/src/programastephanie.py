@@ -2,7 +2,6 @@ import sys
 import os
 import shutil
 import glob
-from datetime import datetime
 from pyspark.sql import SparkSession
 import pyspark.sql.functions as F
 import funciones  # Importar las funciones desde el archivo funciones.py
@@ -73,7 +72,11 @@ df_metricas.show()
 # Función para eliminar la carpeta si ya existe
 def eliminar_carpeta_si_existe(ruta_carpeta):
     if os.path.exists(ruta_carpeta):
+        print(f"Eliminando carpeta: {ruta_carpeta}")
         shutil.rmtree(ruta_carpeta)
+        print(f"Carpeta eliminada: {ruta_carpeta}")
+    else:
+        print(f"La carpeta no existe: {ruta_carpeta}")
 
 # Eliminar las carpetas si ya existen para sobrescribir
 eliminar_carpeta_si_existe("/src/output/total_productos")
@@ -91,6 +94,3 @@ df_metricas.coalesce(1).write.mode("overwrite").csv("/src/output/metricas", head
 
 # Finalizar la sesión de Spark
 spark.stop()
-
-# Verificar si los archivos fueron actualizados correctamente
-print("\n--- Proceso finalizado ---")
