@@ -49,7 +49,7 @@ print("\n--- Total vendido por caja ---")
 total_cajas.show()
 
 # Calcular las métricas, incluyendo la fecha
-caja_con_mas_ventas, caja_con_menos_ventas, percentil_25, percentil_50, percentil_75 = funciones.calcular_metricas(df_final)
+caja_con_mas_ventas, caja_con_menos_ventas, percentil_25, percentil_50, percentil_75 = funciones.calcular_metricas_con_fecha(df_final)
 producto_mas_vendido, producto_mayor_ingreso = funciones.calcular_productos(df_final)
 
 # Extraer la fecha de las compras (opcional)
@@ -66,7 +66,7 @@ metricas_data = [
     ("producto_de_mayor_ingreso", producto_mayor_ingreso, fecha)
 ]
 
-# Cambiar "Métrica" a "Metrica" para evitar problemas con caracteres especiales
+# Definir el esquema sin la tilde
 schema_metricas = "Metrica STRING, Valor STRING, Fecha STRING"
 
 df_metricas = spark.createDataFrame(metricas_data, schema=schema_metricas)
