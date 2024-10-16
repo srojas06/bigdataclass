@@ -48,31 +48,25 @@ total_cajas = df_final.groupBy("numero_caja").agg(F.sum("total_venta").alias("to
 print("\n--- Total vendido por caja ---")
 total_cajas.show()
 
-# Calcular las métricas, incluyendo la fecha
+# Calcular las métricas
 caja_con_mas_ventas, caja_con_menos_ventas, percentil_25, percentil_50, percentil_75 = funciones.calcular_metricas(df_final)
 producto_mas_vendido, producto_mayor_ingreso = funciones.calcular_productos(df_final)
 
-# Extraer la fecha de las compras (opcional)
-fecha = df_final.select(F.first("fecha")).first()["first(fecha)"]
-
-# Crear un DataFrame para las métricas con la fecha incluida
+# Crear un DataFrame para las métricas
 metricas_data = [
-    ("caja_con_mas_ventas", caja_con_mas_ventas, fecha),
-    ("caja_con_menos_ventas", caja_con_menos_ventas, fecha),
-    ("percentil_25_por_caja", percentil_25, fecha),
-    ("percentil_50_por_caja", percentil_50, fecha),
-    ("percentil_75_por_caja", percentil_75, fecha),
-    ("producto_mas_vendido_por_unidad", producto_mas_vendido, fecha),
-    ("producto_de_mayor_ingreso", producto_mayor_ingreso, fecha)
+    ("caja_con_mas_ventas", caja_con_mas_ventas),
+    ("caja_con_menos_ventas", caja_con_menos_ventas),
+    ("percentil_25_por_caja", percentil_25),
+    ("percentil_50_por_caja", percentil_50),
+    ("percentil_75_por_caja", percentil_75),
+    ("producto_mas_vendido_por_unidad", producto_mas_vendido),
+    ("producto_de_mayor_ingreso", producto_mayor_ingreso)
 ]
 
-# Definir el esquema sin la tilde
-schema_metricas = "Metrica STRING, Valor STRING, Fecha STRING"
-
-df_metricas = spark.createDataFrame(metricas_data, schema=schema_metricas)
+df_metricas = spark.createDataFrame(metricas_data, ["Métrica", "Valor"])
 
 # Mostrar las métricas como una tabla en el CMD
-print("\n--- Métricas con fecha ---")
+print("\n--- Métricas ---")
 df_metricas.show()
 
 # Función para eliminar la carpeta si ya existe
@@ -91,7 +85,7 @@ total_productos.coalesce(1).write.mode("overwrite").csv("/src/output/total_produ
 # Guardar los resultados de total_cajas en una carpeta y un archivo
 total_cajas.coalesce(1).write.mode("overwrite").csv("/src/output/total_cajas", header=True)
 
-# Guardar las métricas con la fecha en la carpeta "metricas" con un solo archivo
+# Guardar las métricas en la carpeta "metricas" con un solo archivo
 df_metricas.coalesce(1).write.mode("overwrite").csv("/src/output/metricas", header=True)
 
 # Finalizar la sesión de Spark
