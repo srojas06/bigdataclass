@@ -2,6 +2,7 @@ import sys
 import os
 import shutil
 import glob
+from datetime import datetime
 from pyspark.sql import SparkSession
 import pyspark.sql.functions as F
 import funciones  # Importar las funciones desde el archivo funciones.py
@@ -63,7 +64,7 @@ metricas_data = [
     ("producto_de_mayor_ingreso", producto_mayor_ingreso)
 ]
 
-df_metricas = spark.createDataFrame(metricas_data, ["Métrica", "Valor"])
+df_metricas = spark.createDataFrame(metricas_data, ["Metrica", "Valor"])
 
 # Mostrar las métricas como una tabla en el CMD
 print("\n--- Métricas ---")
@@ -90,3 +91,6 @@ df_metricas.coalesce(1).write.mode("overwrite").csv("/src/output/metricas", head
 
 # Finalizar la sesión de Spark
 spark.stop()
+
+# Verificar si los archivos fueron actualizados correctamente
+print("\n--- Proceso finalizado ---")
