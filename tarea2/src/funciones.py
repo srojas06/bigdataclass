@@ -46,18 +46,19 @@ def calcular_productos(df_final):
     producto_mayor_ingreso = df_final.groupBy("nombre_producto").agg(F.sum(F.col("cantidad") * F.col("precio_unitario")).alias("total_ingresos")).orderBy(F.col("total_ingresos").desc()).first()["nombre_producto"]
     return producto_mas_vendido, producto_mayor_ingreso
 
-def guardar_metricas(caja_con_mas_ventas, caja_con_menos_ventas, percentil_25, percentil_50, percentil_75, producto_mas_vendido, producto_mayor_ingreso, spark):
+def guardar_metricas_con_fecha(caja_con_mas_ventas, caja_con_menos_ventas, percentil_25, percentil_50, percentil_75, producto_mas_vendido, producto_mayor_ingreso, fecha, spark):
     metricas = [
-        Row(metrica="caja_con_mas_ventas", valor=caja_con_mas_ventas),
-        Row(metrica="caja_con_menos_ventas", valor=caja_con_menos_ventas),
-        Row(metrica="percentil_25_por_caja", valor=percentil_25),
-        Row(metrica="percentil_50_por_caja", valor=percentil_50),
-        Row(metrica="percentil_75_por_caja", valor=percentil_75),
-        Row(metrica="producto_mas_vendido_por_unidad", valor=producto_mas_vendido),
-        Row(metrica="producto_de_mayor_ingreso", valor=producto_mayor_ingreso)
+        Row(metrica="caja_con_mas_ventas", valor=caja_con_mas_ventas, fecha=fecha),
+        Row(metrica="caja_con_menos_ventas", valor=caja_con_menos_ventas, fecha=fecha),
+        Row(metrica="percentil_25_por_caja", valor=percentil_25, fecha=fecha),
+        Row(metrica="percentil_50_por_caja", valor=percentil_50, fecha=fecha),
+        Row(metrica="percentil_75_por_caja", valor=percentil_75, fecha=fecha),
+        Row(metrica="producto_mas_vendido_por_unidad", valor=producto_mas_vendido, fecha=fecha),
+        Row(metrica="producto_de_mayor_ingreso", valor=producto_mayor_ingreso, fecha=fecha)
     ]
     df_metricas = spark.createDataFrame(metricas)
     df_metricas.coalesce(1).write.mode("overwrite").csv("/src/output/metricas", header=True)
+
 
 def calcular_total_productos(df):
     # Convertir todos los nombres a minúsculas antes de hacer la agregación
