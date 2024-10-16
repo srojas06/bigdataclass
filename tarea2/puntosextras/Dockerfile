@@ -1,21 +1,13 @@
-FROM openjdk:14-alpine
+FROM openjdk:14
 
-ENV SPARK_HOME=/usr/lib/python3.7/site-packages/pyspark
+ENV SPARK_HOME=/usr/local/lib/python3.7/site-packages/pyspark
 
-RUN apk add bash && \
-  apk add nano && \
-  apk add postgresql-client && \
-  apk add python3 && \
-  apk add gcc musl-dev postgresql-dev && \
+RUN apt-get update && \
+  apt-get install -y bash nano postgresql-client python3 python3-pip gcc libpq-dev && \
   pip3 install --upgrade pip && \
-  pip3 install pyspark && \
-  pip3 install pytest && \
-  pip3 install pyyaml && \
-  pip3 install psycopg2-binary && \
+  pip3 install pyspark pytest pyyaml psycopg2-binary && \
   ln -s /usr/bin/python3 /usr/bin/python
 
 WORKDIR /src
 
 COPY . /src
-
-
