@@ -53,8 +53,8 @@ def calcular_total_productos(df):
     # Convertir todos los nombres a minúsculas antes de hacer la agregación
     df = df.withColumn("nombre_producto", F.lower(F.col("nombre_producto")))
     
-    # Filtrar productos con cantidades nulas, negativas o cero
-    df_filtrado = df.filter(F.col("cantidad").isNotNull() & (F.col("cantidad") > 0))
+    # Filtrar productos con nombres o cantidades nulas, cantidades negativas o cero
+    df_filtrado = df.filter(F.col("nombre_producto").isNotNull() & F.col("cantidad").isNotNull() & (F.col("cantidad") > 0))
     
     # Calcular el total de productos
     return df_filtrado.groupBy("nombre_producto").agg(F.sum("cantidad").alias("cantidad_total"))
