@@ -13,8 +13,8 @@ RUN apk add bash && \
   pip3 install psycopg2-binary && \  # Instalar psycopg2-binary para evitar problemas de dependencias
   ln -s /usr/bin/python3 /usr/bin/python
 
-# Configurar variables de entorno
-ENV JAVA_HOME=/usr/lib/jvm/default-jvm
+# Configurar JAVA_HOME explícitamente para Alpine Linux
+ENV JAVA_HOME=/usr/lib/jvm/java-14-openjdk
 ENV PATH="${JAVA_HOME}/bin:${PATH}"
 
 # Establecer el directorio de trabajo
@@ -22,4 +22,3 @@ WORKDIR /src
 
 # Copiar todos los archivos al contenedor
 COPY . /src
-
