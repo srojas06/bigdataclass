@@ -61,8 +61,15 @@ def calcular_total_productos(df):
 
 # Calcular el total de ventas por caja (ignorando ventas negativas)
 def calcular_total_cajas(df):
-    # Filtrar las ventas negativas (devoluciones)
-    df_filtrado = df.filter(F.col("total_venta") >= 0)
+    # Convertir todas las ventas a DoubleType para evitar conflictos de tipos
+    df = df.withColumn("total_venta", F.col("total_venta").cast("double"))
+    
+    # Filtrar cajas con identificador nulo
+    df_filtrado = df.filter(F.col("numero_caja").isNotNull())
+    
+    # Filtrar devoluciones (ventas negativas)
+    df_filtrado = df_filtrado.filter(F.col("total_venta") >= 0)
     
     # Calcular el total de ventas por caja
     return df_filtrado.groupBy("numero_caja").agg(F.sum("total_venta").alias("total_vendido"))
+
