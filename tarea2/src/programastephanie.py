@@ -1,4 +1,3 @@
-import sys
 import os
 import shutil
 import glob
@@ -34,9 +33,6 @@ for df in dataframes[1:]:
 # Crear la columna total_venta (cantidad * precio_unitario)
 df_final = df_final.withColumn("total_venta", F.col("cantidad") * F.col("precio_unitario"))
 
-# Asegurarnos de que Spark no está utilizando caché
-df_final.unpersist()
-
 # Calcular el total de productos vendidos
 total_productos = df_final.groupBy("nombre_producto").agg(F.sum("cantidad").alias("cantidad_total"))
 
@@ -66,32 +62,21 @@ metricas_data = [
     ("producto_de_mayor_ingreso", producto_mayor_ingreso)
 ]
 
-df_metricas = spark.createDataFrame(metricas_data, ["Metrica", "Valor"])
+df_metricas = spark.createDataFrame(metricas_data, ["Métrica", "Valor"])
 
 # Mostrar las métricas como una tabla en el CMD
 print("\n--- Métricas ---")
 df_metricas.show()
 
 # Función para eliminar la carpeta si ya existe
-def eliminar_archivos_en_carpeta(ruta_carpeta):
+def eliminar_carpeta_si_existe(ruta_carpeta):
     if os.path.exists(ruta_carpeta):
-        print(f"Eliminando archivos en la carpeta: {ruta_carpeta}")
-        for archivo in os.listdir(ruta_carpeta):
-            archivo_path = os.path.join(ruta_carpeta, archivo)
-            try:
-                if os.path.isfile(archivo_path) or os.path.islink(archivo_path):
-                    os.unlink(archivo_path)
-                    print(f"Archivo eliminado: {archivo_path}")
-                elif os.path.isdir(archivo_path):
-                    shutil.rmtree(archivo_path)
-                    print(f"Carpeta eliminada: {archivo_path}")
-            except Exception as e:
-                print(f'Error eliminando {archivo_path}. Razón: {e}')
+        shutil.rmtree(ruta_carpeta)
 
 # Eliminar las carpetas si ya existen para sobrescribir
-eliminar_archivos_en_carpeta("/src/output/total_productos")
-eliminar_archivos_en_carpeta("/src/output/total_cajas")
-eliminar_archivos_en_carpeta("/src/output/metricas")
+eliminar_carpeta_si_existe("/src/output/total_productos")
+eliminar_carpeta_si_existe("/src/output/total_cajas")
+eliminar_carpeta_si_existe("/src/output/metricas")
 
 # Guardar los resultados de total_productos en una carpeta y un archivo
 total_productos.coalesce(1).write.mode("overwrite").csv("/src/output/total_productos", header=True)
@@ -101,12 +86,6 @@ total_cajas.coalesce(1).write.mode("overwrite").csv("/src/output/total_cajas", h
 
 # Guardar las métricas en la carpeta "metricas" con un solo archivo
 df_metricas.coalesce(1).write.mode("overwrite").csv("/src/output/metricas", header=True)
-
-# Verifica si los archivos se crearon correctamente
-if os.path.exists("/src/output/metricas"):
-    print("\n--- Proceso finalizado: Archivos actualizados correctamente ---")
-else:
-    print("\n--- Error: Los archivos no se actualizaron correctamente ---")
 
 # Finalizar la sesión de Spark
 spark.stop()
