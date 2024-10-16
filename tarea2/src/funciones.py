@@ -5,7 +5,7 @@ from pyspark.sql import Row
 def leer_archivo_yml(ruta):
     with open(ruta, 'r') as archivo:
         return yaml.safe_load(archivo)
-
+        
 def convertir_a_dataframe(dato_yaml, spark):
     compras = []
     for compra in dato_yaml[1]["- compras"]:
@@ -14,7 +14,7 @@ def convertir_a_dataframe(dato_yaml, spark):
                 "numero_caja": dato_yaml[0]["- numero_caja"],
                 "nombre_producto": producto["- nombre"],
                 "cantidad": producto["cantidad"],
-                "precio_unitario": producto["precio_unitario"]
+                "precio_unitario": float(producto["precio_unitario"])  # Convertir a float para asegurar DoubleType
             }
             # Manejar el campo opcional 'fecha'
             if "- fecha" in producto:
