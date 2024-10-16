@@ -1,7 +1,6 @@
 import pytest
 from pyspark.sql import SparkSession
 import funciones  # Importar las funciones desde el archivo funciones.py
-import pyspark.sql.functions as F
 
 # Crear la sesión de Spark
 spark = SparkSession.builder.appName("PruebasTotalProductos").getOrCreate()
@@ -23,33 +22,33 @@ def test_total_productos_multiples():
 # 2. Prueba sin productos (escenario vacío)
 def test_total_productos_sin_productos():
     schema = ["nombre_producto", "cantidad"]
-    df = spark.createDataFrame([], schema)
+    df = spark.createDataFrame([], schema=schema)
     
     resultado = funciones.calcular_total_productos(df)
     
     esperado = []
     assert resultado.collect() == esperado
 
-# 3. Prueba con un solo producto
-def test_total_productos_un_solo_producto():
-    data = [("manzana", 10)]
+# 3. Prueba con valores nulos
+def test_total_productos_con_nulos():
+    data = [("manzana", 10), (None, 5), ("pera", None)]
     df = spark.createDataFrame(data, ["nombre_producto", "cantidad"])
-    
+
     resultado = funciones.calcular_total_productos(df)
-    
+
     esperado = [("manzana", 10)]
-    
+
     assert resultado.collect() == esperado
 
-# 4. Prueba con productos duplicados
-def test_total_productos_duplicados():
-    data = [("manzana", 10), ("manzana", 15), ("manzana", 5)]
+# 4. Prueba con cantidades cero
+def test_total_productos_con_cantidades_cero():
+    data = [("manzana", 10), ("pera", 0), ("naranja", 0)]
     df = spark.createDataFrame(data, ["nombre_producto", "cantidad"])
-    
+
     resultado = funciones.calcular_total_productos(df)
-    
-    esperado = [("manzana", 30)]
-    
+
+    esperado = [("manzana", 10)]
+
     assert resultado.collect() == esperado
 
 # 5. Prueba con nombres similares (mayúsculas y minúsculas unificados)
