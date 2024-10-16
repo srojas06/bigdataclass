@@ -58,14 +58,14 @@ def test_total_productos_unificar_mayusculas_minusculas():
     data = [("manzana", 10), ("Manzana", 5), ("MANZANA", 3)]
     df = spark.createDataFrame(data, ["nombre_producto", "cantidad"])
     
-    # Convertir todos los nombres a minúsculas antes de hacer la agregación
-    df = df.withColumn("nombre_producto", F.lower(F.col("nombre_producto")))
-    
+    # Llamamos a la función que ya convierte los nombres a minúsculas
     resultado = funciones.calcular_total_productos(df)
     
+    # Todos los casos de "manzana" en distintas mayúsculas y minúsculas deben ser tratados como uno solo
     esperado = [("manzana", 18)]  # Se contabilizan como un solo producto
     
     assert resultado.collect() == esperado
+
 
 # 6. Prueba con cantidades negativas (devoluciones ignoradas)
 def test_total_productos_cantidades_negativas():
@@ -111,6 +111,20 @@ def test_total_productos_nombres_largos():
     esperado = [("manzana_extra_larga_con_muchos_caracteres", 10), ("pera", 5)]
     
     assert resultado.collect() == esperado
+    
+# 10. Prueba con productos con cantidades cero
+def test_total_productos_con_cantidades_cero():
+    data = [("manzana", 10), ("pera", 0), ("pasta", 5), ("naranja", 0)]
+    df = spark.createDataFrame(data, ["nombre_producto", "cantidad"])
+    
+    # Llamamos a la función que ya incluye el filtrado de productos con cantidades negativas (y en este caso, cero)
+    resultado = funciones.calcular_total_productos(df)
+    
+    # Las cantidades cero no deben aparecer en los resultados
+    esperado = [("manzana", 10), ("pasta", 5)]  # Se ignoran "pera" y "naranja" porque tienen cantidades cero
+    
+    assert resultado.collect() == esperado
+
 
 # Cerrar la sesión de Spark al final de las pruebas
 @pytest.fixture(scope="session", autouse=True)
