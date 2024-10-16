@@ -2,10 +2,12 @@ import yaml
 from pyspark.sql import functions as F
 from pyspark.sql import Row
 
+# Función para leer un archivo YAML y convertirlo a un formato legible
 def leer_archivo_yml(ruta):
     with open(ruta, 'r') as archivo:
         return yaml.safe_load(archivo)
 
+# Convertir los datos YAML a un DataFrame de Spark
 def convertir_a_dataframe(dato_yaml, spark):
     compras = []
     for compra in dato_yaml[1]["- compras"]:
@@ -18,12 +20,14 @@ def convertir_a_dataframe(dato_yaml, spark):
             })
     return spark.createDataFrame(compras)
 
+# Calcular las métricas clave como cajas con más/menos ventas y percentiles
 def calcular_metricas(df_final):
     caja_con_mas_ventas = df_final.groupBy("numero_caja").agg(F.sum("total_venta").alias("total_vendido")).orderBy(F.col("total_vendido").desc()).first()["numero_caja"]
     caja_con_menos_ventas = df_final.groupBy("numero_caja").agg(F.sum("total_venta").alias("total_vendido")).orderBy(F.col("total_vendido").asc()).first()["numero_caja"]
     percentil_25, percentil_50, percentil_75 = calcular_percentiles(df_final)
     return caja_con_mas_ventas, caja_con_menos_ventas, percentil_25, percentil_50, percentil_75
 
+# Calcular los percentiles 25, 50 y 75
 def calcular_percentiles(df_final):
     total_por_caja = df_final.groupBy("numero_caja").agg(F.sum("total_venta").alias("total_vendido"))
     percentil_25 = total_por_caja.selectExpr("percentile_approx(total_vendido, 0.25)").first()[0]
@@ -31,11 +35,13 @@ def calcular_percentiles(df_final):
     percentil_75 = total_por_caja.selectExpr("percentile_approx(total_vendido, 0.75)").first()[0]
     return percentil_25, percentil_50, percentil_75
 
+# Calcular el producto más vendido y el de mayor ingreso
 def calcular_productos(df_final):
     producto_mas_vendido = df_final.groupBy("nombre_producto").agg(F.sum("cantidad").alias("total_vendido")).orderBy(F.col("total_vendido").desc()).first()["nombre_producto"]
     producto_mayor_ingreso = df_final.groupBy("nombre_producto").agg(F.sum(F.col("cantidad") * F.col("precio_unitario")).alias("total_ingresos")).orderBy(F.col("total_ingresos").desc()).first()["nombre_producto"]
     return producto_mas_vendido, producto_mayor_ingreso
 
+# Guardar las métricas calculadas en un archivo CSV
 def guardar_metricas(caja_con_mas_ventas, caja_con_menos_ventas, percentil_25, percentil_50, percentil_75, producto_mas_vendido, producto_mayor_ingreso, spark):
     metricas = [
         Row(metrica="caja_con_mas_ventas", valor=caja_con_mas_ventas),
@@ -49,6 +55,7 @@ def guardar_metricas(caja_con_mas_ventas, caja_con_menos_ventas, percentil_25, p
     df_metricas = spark.createDataFrame(metricas)
     df_metricas.coalesce(1).write.mode("overwrite").csv("/src/output/metricas", header=True)
 
+# Calcular el total de productos vendidos, excluyendo negativos y manejando mayúsculas
 def calcular_total_productos(df):
     # Convertir todos los nombres a minúsculas antes de hacer la agregación
     df = df.withColumn("nombre_producto", F.lower(F.col("nombre_producto")))
