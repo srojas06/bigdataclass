@@ -73,3 +73,4 @@ def calcular_total_cajas(df):
     # Calcular el total de ventas por caja
     return df_filtrado.groupBy("numero_caja").agg(F.sum("total_venta").alias("total_vendido"))
 
+
