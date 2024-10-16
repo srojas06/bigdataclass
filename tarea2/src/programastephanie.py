@@ -34,6 +34,9 @@ for df in dataframes[1:]:
 # Crear la columna total_venta (cantidad * precio_unitario)
 df_final = df_final.withColumn("total_venta", F.col("cantidad") * F.col("precio_unitario"))
 
+# Asegurarnos de que Spark no está utilizando caché
+df_final.unpersist()
+
 # Calcular el total de productos vendidos
 total_productos = df_final.groupBy("nombre_producto").agg(F.sum("cantidad").alias("cantidad_total"))
 
@@ -75,8 +78,6 @@ def eliminar_carpeta_si_existe(ruta_carpeta):
         print(f"Eliminando carpeta: {ruta_carpeta}")
         shutil.rmtree(ruta_carpeta)
         print(f"Carpeta eliminada: {ruta_carpeta}")
-    else:
-        print(f"La carpeta no existe: {ruta_carpeta}")
 
 # Eliminar las carpetas si ya existen para sobrescribir
 eliminar_carpeta_si_existe("/src/output/total_productos")
@@ -91,6 +92,12 @@ total_cajas.coalesce(1).write.mode("overwrite").csv("/src/output/total_cajas", h
 
 # Guardar las métricas en la carpeta "metricas" con un solo archivo
 df_metricas.coalesce(1).write.mode("overwrite").csv("/src/output/metricas", header=True)
+
+# Verifica si los archivos se crearon correctamente
+if os.path.exists("/src/output/metricas"):
+    print("\n--- Proceso finalizado: Archivos actualizados correctamente ---")
+else:
+    print("\n--- Error: Los archivos no se actualizaron correctamente ---")
 
 # Finalizar la sesión de Spark
 spark.stop()
