@@ -50,6 +50,11 @@ def guardar_metricas(caja_con_mas_ventas, caja_con_menos_ventas, percentil_25, p
     df_metricas.coalesce(1).write.mode("overwrite").csv("/src/output/metricas", header=True)
 
 def calcular_total_productos(df):
+    # Convertir todos los nombres a minúsculas antes de hacer la agregación
+    df = df.withColumn("nombre_producto", F.lower(F.col("nombre_producto")))
+    
     # Filtrar productos con cantidades negativas
     df_filtrado = df.filter(F.col("cantidad") >= 0)
+    
+    # Calcular el total de productos
     return df_filtrado.groupBy("nombre_producto").agg(F.sum("cantidad").alias("cantidad_total"))
