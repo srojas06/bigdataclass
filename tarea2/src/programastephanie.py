@@ -48,26 +48,27 @@ total_cajas = df_final.groupBy("numero_caja").agg(F.sum("total_venta").alias("to
 print("\n--- Total vendido por caja ---")
 total_cajas.show()
 
-# Calcular las métricas, incluyendo la fecha opcional
+# Calcular las métricas, incluyendo la fecha
 caja_con_mas_ventas, caja_con_menos_ventas, percentil_25, percentil_50, percentil_75 = funciones.calcular_metricas(df_final)
 producto_mas_vendido, producto_mayor_ingreso = funciones.calcular_productos(df_final)
 
-# Extraer la primera fecha de las compras (si existe)
+# Extraer la fecha de las compras (opcional)
 fecha = df_final.select(F.first("fecha")).first()["first(fecha)"]
 
 # Crear un DataFrame para las métricas con la fecha incluida
 metricas_data = [
-    ("caja_con_mas_ventas", caja_con_mas_ventas, fecha if fecha else "Sin fecha"),
-    ("caja_con_menos_ventas", caja_con_menos_ventas, fecha if fecha else "Sin fecha"),
-    ("percentil_25_por_caja", percentil_25, fecha if fecha else "Sin fecha"),
-    ("percentil_50_por_caja", percentil_50, fecha if fecha else "Sin fecha"),
-    ("percentil_75_por_caja", percentil_75, fecha if fecha else "Sin fecha"),
-    ("producto_mas_vendido_por_unidad", producto_mas_vendido, fecha if fecha else "Sin fecha"),
-    ("producto_de_mayor_ingreso", producto_mayor_ingreso, fecha if fecha else "Sin fecha")
+    ("caja_con_mas_ventas", caja_con_mas_ventas, fecha),
+    ("caja_con_menos_ventas", caja_con_menos_ventas, fecha),
+    ("percentil_25_por_caja", percentil_25, fecha),
+    ("percentil_50_por_caja", percentil_50, fecha),
+    ("percentil_75_por_caja", percentil_75, fecha),
+    ("producto_mas_vendido_por_unidad", producto_mas_vendido, fecha),
+    ("producto_de_mayor_ingreso", producto_mayor_ingreso, fecha)
 ]
 
-# Crear el DataFrame con las métricas y el esquema adecuado
-schema_metricas = "Métrica STRING, Valor STRING, Fecha STRING"
+# Cambiar "Métrica" a "Metrica" para evitar problemas con caracteres especiales
+schema_metricas = "Metrica STRING, Valor STRING, Fecha STRING"
+
 df_metricas = spark.createDataFrame(metricas_data, schema=schema_metricas)
 
 # Mostrar las métricas como una tabla en el CMD
