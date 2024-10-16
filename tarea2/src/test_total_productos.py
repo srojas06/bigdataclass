@@ -22,14 +22,14 @@ def test_total_productos_multiples():
 
 # 2. Prueba sin productos (escenario vacío)
 def test_total_productos_sin_productos():
-    data = []
-    df = spark.createDataFrame(data, ["nombre_producto", "cantidad"])
+    schema = ["nombre_producto", "cantidad"]
+    df = spark.createDataFrame([], schema)
     
     resultado = funciones.calcular_total_productos(df)
     
     esperado = []
-    
     assert resultado.collect() == esperado
+
 
 # 3. Prueba con un solo producto
 def test_total_productos_un_solo_producto():
@@ -80,15 +80,16 @@ def test_total_productos_cantidades_negativas():
     assert resultado.collect() == esperado
 
 # 7. Prueba con valores nulos
-def test_total_productos_con_nulos():
+    def test_total_productos_con_nulos():
     data = [("manzana", 10), (None, 5), ("pera", None)]
     df = spark.createDataFrame(data, ["nombre_producto", "cantidad"])
-    
+
     resultado = funciones.calcular_total_productos(df)
-    
+
     esperado = [("manzana", 10)]
-    
+
     assert resultado.collect() == esperado
+
 
 # 8. Prueba con cantidades decimales
 def test_total_productos_con_decimales():
@@ -116,13 +117,11 @@ def test_total_productos_nombres_largos():
 def test_total_productos_con_cantidades_cero():
     data = [("manzana", 10), ("pera", 0), ("pasta", 5), ("naranja", 0)]
     df = spark.createDataFrame(data, ["nombre_producto", "cantidad"])
-    
-    # Llamamos a la función que ya incluye el filtrado de productos con cantidades negativas (y en este caso, cero)
+
     resultado = funciones.calcular_total_productos(df)
-    
-    # Las cantidades cero no deben aparecer en los resultados
-    esperado = [("manzana", 10), ("pasta", 5)]  # Se ignoran "pera" y "naranja" porque tienen cantidades cero
-    
+
+    esperado = [("manzana", 10), ("pasta", 5)]  # Se ignoran "pera" y "naranja"
+
     assert resultado.collect() == esperado
 
 
