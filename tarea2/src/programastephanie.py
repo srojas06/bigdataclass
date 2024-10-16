@@ -73,16 +73,25 @@ print("\n--- Métricas ---")
 df_metricas.show()
 
 # Función para eliminar la carpeta si ya existe
-def eliminar_carpeta_si_existe(ruta_carpeta):
+def eliminar_archivos_en_carpeta(ruta_carpeta):
     if os.path.exists(ruta_carpeta):
-        print(f"Eliminando carpeta: {ruta_carpeta}")
-        shutil.rmtree(ruta_carpeta)
-        print(f"Carpeta eliminada: {ruta_carpeta}")
+        print(f"Eliminando archivos en la carpeta: {ruta_carpeta}")
+        for archivo in os.listdir(ruta_carpeta):
+            archivo_path = os.path.join(ruta_carpeta, archivo)
+            try:
+                if os.path.isfile(archivo_path) or os.path.islink(archivo_path):
+                    os.unlink(archivo_path)
+                    print(f"Archivo eliminado: {archivo_path}")
+                elif os.path.isdir(archivo_path):
+                    shutil.rmtree(archivo_path)
+                    print(f"Carpeta eliminada: {archivo_path}")
+            except Exception as e:
+                print(f'Error eliminando {archivo_path}. Razón: {e}')
 
 # Eliminar las carpetas si ya existen para sobrescribir
-eliminar_carpeta_si_existe("/src/output/total_productos")
-eliminar_carpeta_si_existe("/src/output/total_cajas")
-eliminar_carpeta_si_existe("/src/output/metricas")
+eliminar_archivos_en_carpeta("/src/output/total_productos")
+eliminar_archivos_en_carpeta("/src/output/total_cajas")
+eliminar_archivos_en_carpeta("/src/output/metricas")
 
 # Guardar los resultados de total_productos en una carpeta y un archivo
 total_productos.coalesce(1).write.mode("overwrite").csv("/src/output/total_productos", header=True)
