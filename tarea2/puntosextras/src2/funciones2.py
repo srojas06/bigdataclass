@@ -1,7 +1,21 @@
-import yaml
 import psycopg2
 from pyspark.sql import functions as F
 from pyspark.sql import Row
+
+def conectar_base_de_datos():
+    try:
+        conn = psycopg2.connect(
+            host="localhost",
+            port="5433",
+            database="postgres",
+            user="postgres",
+            password="testPassword"
+        )
+        print("Conexión exitosa a la base de datos.")
+        return conn
+    except Exception as e:
+        print(f"Error al conectar a la base de datos: {e}")
+        return None
 
 def leer_archivo_yml(ruta):
     with open(ruta, 'r') as archivo:
@@ -11,23 +25,13 @@ def convertir_a_dataframe(dato_yaml, spark):
     compras = []
     for compra in dato_yaml[1]["- compras"]:
         for producto in compra["- compra"]:
-            compra_data = {
+            compras.append({
                 "numero_caja": dato_yaml[0]["- numero_caja"],
                 "nombre_producto": producto["- nombre"],
                 "cantidad": producto["cantidad"],
-                "precio_unitario": float(producto["precio_unitario"])  # Convertir a float para asegurar DoubleType
-            }
-            # Manejar el campo opcional 'fecha'
-            if "- fecha" in producto:
-                compra_data["fecha"] = producto["- fecha"]
-            else:
-                compra_data["fecha"] = None
-            compras.append(compra_data)
-    
-    # Definir los tipos explícitamente, incluyendo el tipo para 'fecha'
-    schema = "numero_caja STRING, nombre_producto STRING, cantidad INT, precio_unitario DOUBLE, fecha STRING"
-    
-    return spark.createDataFrame(compras, schema)
+                "precio_unitario": producto["precio_unitario"]
+            })
+    return spark.createDataFrame(compras)
 
 def calcular_metricas(df_final):
     caja_con_mas_ventas = df_final.groupBy("numero_caja").agg(F.sum("total_venta").alias("total_vendido")).orderBy(F.col("total_vendido").desc()).first()["numero_caja"]
@@ -47,36 +51,38 @@ def calcular_productos(df_final):
     producto_mayor_ingreso = df_final.groupBy("nombre_producto").agg(F.sum(F.col("cantidad") * F.col("precio_unitario")).alias("total_ingresos")).orderBy(F.col("total_ingresos").desc()).first()["nombre_producto"]
     return producto_mas_vendido, producto_mayor_ingreso
 
-def insertar_metricas_en_db(metricas_data, db_config):
+def guardar_metricas_en_db(caja_con_mas_ventas, caja_con_menos_ventas, percentil_25, percentil_50, percentil_75, producto_mas_vendido, producto_mayor_ingreso):
+    conn = conectar_base_de_datos()
+    if conn is None:
+        print("No se pudo conectar a la base de datos. Saliendo...")
+        return
+
     try:
-        # Conectar a la base de datos PostgreSQL
-        conexion = psycopg2.connect(
-            host=db_config['host'],
-            database=db_config['database'],
-            user=db_config['user'],
-            password=db_config['password'],
-            port=db_config['port']
-        )
-        cursor = conexion.cursor()
-
-        # Insertar las métricas en la tabla de PostgreSQL
-        for metrica, valor, fecha in metricas_data:
-            cursor.execute(
-                """
-                INSERT INTO metricas (metrica, valor, fecha)
-                VALUES (%s, %s, %s)
-                """,
-                (metrica, valor, fecha)
+        cur = conn.cursor()
+        cur.execute('''
+            CREATE TABLE IF NOT EXISTS metricas (
+                id SERIAL PRIMARY KEY,
+                metrica VARCHAR(255),
+                valor VARCHAR(255)
             )
-
-        # Confirmar la transacción
-        conexion.commit()
-    except (Exception, psycopg2.DatabaseError) as error:
-        print(f"Error al insertar las métricas en la base de datos: {error}")
+        ''')
+        metricas = [
+            ("caja_con_mas_ventas", caja_con_mas_ventas),
+            ("caja_con_menos_ventas", caja_con_menos_ventas),
+            ("percentil_25_por_caja", percentil_25),
+            ("percentil_50_por_caja", percentil_50),
+            ("percentil_75_por_caja", percentil_75),
+            ("producto_mas_vendido_por_unidad", producto_mas_vendido),
+            ("producto_de_mayor_ingreso", producto_mayor_ingreso)
+        ]
+        cur.executemany("INSERT INTO metricas (metrica, valor) VALUES (%s, %s)", metricas)
+        conn.commit()
+        cur.close()
+        print("Métricas guardadas en la base de datos exitosamente.")
+    except Exception as e:
+        print(f"Error al guardar las métricas en la base de datos: {e}")
     finally:
-        if conexion is not None:
-            cursor.close()
-            conexion.close()
+        conn.close()
 
 def calcular_total_productos(df):
     # Convertir todos los nombres a minúsculas antes de hacer la agregación
