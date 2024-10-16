@@ -1,61 +1,43 @@
 import sys
 import os
-import shutil
-import glob
+import funciones2  # Importar las funciones desde funciones2.py
+import psycopg2
 from pyspark.sql import SparkSession
 import pyspark.sql.functions as F
-import funciones  # Importar las funciones desde el archivo funciones.py
 
 # Crear la sesión de Spark
-spark = SparkSession.builder.appName("Tarea2BigData").getOrCreate()
+spark = SparkSession.builder.appName("PuntosExtrasBigData").getOrCreate()
 
 # Deshabilitar los logs innecesarios de Spark
 spark.sparkContext.setLogLevel("ERROR")
 
-# Expandir el patrón 'caja*.yaml' automáticamente
-archivos_yamls = glob.glob(os.path.join("..", "data", "caja*.yaml"))
-
-if len(archivos_yamls) == 0:
-    print("No se encontraron archivos YAML en el directorio especificado.")
+# Verificar si el archivo YAML se ha proporcionado como argumento
+if len(sys.argv) < 2:
+    print("Uso: programamain.py <ruta_archivo_yaml> <host> <usuario> <password> <nombre_bd>")
     sys.exit(1)
 
-# Crear una lista de DataFrames a partir de los archivos YAML encontrados
-dataframes = []
-for ruta in archivos_yamls:
-    datos_yaml = funciones.leer_archivo_yml(ruta)
-    df = funciones.convertir_a_dataframe(datos_yaml, spark)
-    dataframes.append(df)
+# Extraer argumentos
+ruta_archivo_yaml = sys.argv[1]
+host = sys.argv[2]
+usuario = sys.argv[3]
+password = sys.argv[4]
+nombre_bd = sys.argv[5]
 
-# Unir todos los DataFrames en uno solo
-df_final = dataframes[0]
-for df in dataframes[1:]:
-    df_final = df_final.union(df)
+# Leer el archivo YAML
+datos_yaml = funciones2.leer_archivo_yml(ruta_archivo_yaml)
+
+# Convertir los datos a DataFrame de Spark
+df = funciones2.convertir_a_dataframe(datos_yaml, spark)
 
 # Crear la columna total_venta (cantidad * precio_unitario)
-df_final = df_final.withColumn("total_venta", F.col("cantidad") * F.col("precio_unitario"))
+df = df.withColumn("total_venta", F.col("cantidad") * F.col("precio_unitario"))
 
-# Calcular el total de productos vendidos
-total_productos = df_final.groupBy("nombre_producto").agg(F.sum("cantidad").alias("cantidad_total"))
-
-# Mostrar el total de productos vendidos en el CMD
-print("\n--- Total de productos vendidos ---")
-total_productos.show()
-
-# Calcular el total de ventas por caja
-total_cajas = df_final.groupBy("numero_caja").agg(F.sum("total_venta").alias("total_vendido"))
-
-# Mostrar el total vendido por caja en el CMD
-print("\n--- Total vendido por caja ---")
-total_cajas.show()
-
-# Calcular las métricas, incluyendo la fecha
-caja_con_mas_ventas, caja_con_menos_ventas, percentil_25, percentil_50, percentil_75 = funciones.calcular_metricas(df_final)
-producto_mas_vendido, producto_mayor_ingreso = funciones.calcular_productos(df_final)
-
-# Extraer la fecha de las compras (opcional)
-fecha = df_final.select(F.first("fecha")).first()["first(fecha)"]
+# Calcular las métricas
+caja_con_mas_ventas, caja_con_menos_ventas, percentil_25, percentil_50, percentil_75 = funciones2.calcular_metricas(df)
+producto_mas_vendido, producto_mayor_ingreso = funciones2.calcular_productos(df)
 
 # Crear un DataFrame para las métricas con la fecha incluida
+fecha = df.select(F.first("fecha")).first()["first(fecha)"]
 metricas_data = [
     ("caja_con_mas_ventas", caja_con_mas_ventas, fecha),
     ("caja_con_menos_ventas", caja_con_menos_ventas, fecha),
@@ -66,33 +48,52 @@ metricas_data = [
     ("producto_de_mayor_ingreso", producto_mayor_ingreso, fecha)
 ]
 
-# Definir el esquema sin la tilde
 schema_metricas = "Metrica STRING, Valor STRING, Fecha STRING"
-
 df_metricas = spark.createDataFrame(metricas_data, schema=schema_metricas)
 
 # Mostrar las métricas como una tabla en el CMD
 print("\n--- Métricas con fecha ---")
 df_metricas.show()
 
-# Función para eliminar la carpeta si ya existe
-def eliminar_carpeta_si_existe(ruta_carpeta):
-    if os.path.exists(ruta_carpeta):
-        shutil.rmtree(ruta_carpeta)
+# Conectar a la base de datos PostgreSQL y crear la tabla e insertar los datos
+try:
+    conexion = psycopg2.connect(
+        host=host,
+        database=nombre_bd,
+        user=usuario,
+        password=password
+    )
+    cursor = conexion.cursor()
 
-# Eliminar las carpetas si ya existen para sobrescribir
-eliminar_carpeta_si_existe("/src/output/total_productos")
-eliminar_carpeta_si_existe("/src/output/total_cajas")
-eliminar_carpeta_si_existe("/src/output/metricas")
+    # Crear la tabla si no existe
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS metricas (
+            id SERIAL PRIMARY KEY,
+            metrica VARCHAR(255),
+            valor VARCHAR(255),
+            fecha VARCHAR(255)
+        )
+    ''')
 
-# Guardar los resultados de total_productos en una carpeta y un archivo
-total_productos.coalesce(1).write.mode("overwrite").csv("/src/output/total_productos", header=True)
+    # Insertar los datos de las métricas en la tabla
+    for row in metricas_data:
+        cursor.execute(
+            "INSERT INTO metricas (metrica, valor, fecha) VALUES (%s, %s, %s)",
+            (row[0], row[1], row[2])
+        )
 
-# Guardar los resultados de total_cajas en una carpeta y un archivo
-total_cajas.coalesce(1).write.mode("overwrite").csv("/src/output/total_cajas", header=True)
+    # Confirmar los cambios
+    conexion.commit()
 
-# Guardar las métricas con la fecha en la carpeta "metricas" con un solo archivo
-df_metricas.coalesce(1).write.mode("overwrite").csv("/src/output/metricas", header=True)
+except (Exception, psycopg2.Error) as error:
+    print("Error al conectar a la base de datos PostgreSQL", error)
+
+finally:
+    # Cerrar la conexión a la base de datos
+    if conexion:
+        cursor.close()
+        conexion.close()
+        print("Conexión a PostgreSQL cerrada")
 
 # Finalizar la sesión de Spark
 spark.stop()
