@@ -3,8 +3,9 @@ FROM openjdk:14-slim-buster
 ENV SPARK_HOME=/opt/spark
 ENV PATH=$SPARK_HOME/bin:$PATH
 
+# Instalar dependencias necesarias
 RUN apt-get update && \
-    apt-get install -y bash nano postgresql-client python3 python3-pip gcc libpq-dev wget && \
+    apt-get install -y bash nano postgresql-client python3 python3-pip gcc libpq-dev wget procps && \
     pip3 install --upgrade pip && \
     pip3 install pytest pyyaml psycopg2-binary && \
     ln -s /usr/bin/python3 /usr/bin/python
