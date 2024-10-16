@@ -28,14 +28,16 @@ def convertir_a_dataframe(dato_yaml, spark):
     
     return spark.createDataFrame(compras, schema)
 
-def calcular_metricas(df_final):
-    caja_con_mas_ventas = df_final.groupBy("numero_caja").agg(F.sum("total_venta").alias("total_vendido")).orderBy(F.col("total_vendido").desc()).first()["numero_caja"]
-    caja_con_menos_ventas = df_final.groupBy("numero_caja").agg(F.sum("total_venta").alias("total_vendido")).orderBy(F.col("total_vendido").asc()).first()["numero_caja"]
-    percentil_25, percentil_50, percentil_75 = calcular_percentiles(df_final)
+# Función para calcular métricas con la fecha
+def calcular_metricas_con_fecha(df_final):
+    caja_con_mas_ventas = df_final.groupBy("numero_caja", "fecha").agg(F.sum("total_venta").alias("total_vendido")).orderBy(F.col("total_vendido").desc()).first()["numero_caja"]
+    caja_con_menos_ventas = df_final.groupBy("numero_caja", "fecha").agg(F.sum("total_venta").alias("total_vendido")).orderBy(F.col("total_vendido").asc()).first()["numero_caja"]
+    percentil_25, percentil_50, percentil_75 = calcular_percentiles_con_fecha(df_final)
     return caja_con_mas_ventas, caja_con_menos_ventas, percentil_25, percentil_50, percentil_75
 
-def calcular_percentiles(df_final):
-    total_por_caja = df_final.groupBy("numero_caja").agg(F.sum("total_venta").alias("total_vendido"))
+# Función para calcular percentiles con la fecha
+def calcular_percentiles_con_fecha(df_final):
+    total_por_caja = df_final.groupBy("numero_caja", "fecha").agg(F.sum("total_venta").alias("total_vendido"))
     percentil_25 = total_por_caja.selectExpr("percentile_approx(total_vendido, 0.25)").first()[0]
     percentil_50 = total_por_caja.selectExpr("percentile_approx(total_vendido, 0.50)").first()[0]
     percentil_75 = total_por_caja.selectExpr("percentile_approx(total_vendido, 0.75)").first()[0]
@@ -59,28 +61,13 @@ def guardar_metricas_con_fecha(caja_con_mas_ventas, caja_con_menos_ventas, perce
     df_metricas = spark.createDataFrame(metricas)
     df_metricas.coalesce(1).write.mode("overwrite").csv("/src/output/metricas", header=True)
 
-
 def calcular_total_productos(df):
-    # Convertir todos los nombres a minúsculas antes de hacer la agregación
     df = df.withColumn("nombre_producto", F.lower(F.col("nombre_producto")))
-    
-    # Filtrar productos con nombres o cantidades nulas, cantidades negativas o cero
     df_filtrado = df.filter(F.col("nombre_producto").isNotNull() & F.col("cantidad").isNotNull() & (F.col("cantidad") > 0))
-    
-    # Calcular el total de productos
     return df_filtrado.groupBy("nombre_producto").agg(F.sum("cantidad").alias("cantidad_total"))
 
-# Calcular el total de ventas por caja (ignorando ventas negativas)
 def calcular_total_cajas(df):
-    # Convertir todas las ventas a DoubleType para evitar conflictos de tipos
     df = df.withColumn("total_venta", F.col("total_venta").cast("double"))
-    
-    # Filtrar cajas con identificador nulo
     df_filtrado = df.filter(F.col("numero_caja").isNotNull())
-    
-    # Filtrar devoluciones (ventas negativas)
     df_filtrado = df_filtrado.filter(F.col("total_venta") >= 0)
-    
-    # Calcular el total de ventas por caja
     return df_filtrado.groupBy("numero_caja").agg(F.sum("total_venta").alias("total_vendido"))
-
