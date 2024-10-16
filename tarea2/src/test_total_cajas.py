@@ -112,14 +112,15 @@ def test_total_cajas_con_decimales():
 
 # 10. Prueba con ventas extremas (muy grandes y muy pequeñas)
 def test_total_cajas_con_ventas_extremas():
-    data = [("caja1", 1000000), ("caja2", 0.01), ("caja3", 500000)]
+    data = [("caja1", 1000000.0), ("caja2", 0.01), ("caja3", 500000.0)]  
     df = spark.createDataFrame(data, ["numero_caja", "total_venta"])
-    
+
     resultado = funciones.calcular_total_cajas(df)
-    
-    esperado = [("caja1", 1000000), ("caja2", 0.01), ("caja3", 500000)]
-    
+
+    esperado = [("caja1", 1000000.0), ("caja2", 0.01), ("caja3", 500000.0)]
+
     assert resultado.collect() == esperado
+
 
 
 # Cerrar la sesión de Spark al final de las pruebas
