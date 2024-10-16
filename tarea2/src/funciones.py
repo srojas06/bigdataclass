@@ -58,3 +58,11 @@ def calcular_total_productos(df):
     
     # Calcular el total de productos
     return df_filtrado.groupBy("nombre_producto").agg(F.sum("cantidad").alias("cantidad_total"))
+
+# Calcular el total de ventas por caja (ignorando ventas negativas)
+def calcular_total_cajas(df):
+    # Filtrar las ventas negativas (devoluciones)
+    df_filtrado = df.filter(F.col("total_venta") >= 0)
+    
+    # Calcular el total de ventas por caja
+    return df_filtrado.groupBy("numero_caja").agg(F.sum("total_venta").alias("total_vendido"))
