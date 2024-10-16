@@ -49,7 +49,7 @@ print("\n--- Total vendido por caja ---")
 total_cajas.show()
 
 # Calcular las métricas, incluyendo la fecha
-caja_con_mas_ventas, caja_con_menos_ventas, percentil_25, percentil_50, percentil_75 = funciones.calcular_metricas_con_fecha(df_final)
+caja_con_mas_ventas, caja_con_menos_ventas, percentil_25, percentil_50, percentil_75 = funciones.calcular_metricas(df_final)
 producto_mas_vendido, producto_mayor_ingreso = funciones.calcular_productos(df_final)
 
 # Extraer la fecha de las compras (opcional)
