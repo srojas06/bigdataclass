@@ -16,15 +16,19 @@ def convertir_a_dataframe(dato_yaml, spark):
                 "cantidad": producto["cantidad"],
                 "precio_unitario": producto["precio_unitario"]
             }
-            # Verificar si existe el atributo opcional "fecha" y agregarlo si está presente
-            if "- fecha" in compra:
-                compra_data["fecha"] = compra["- fecha"]
+            # Manejar el campo opcional 'fecha'
+            if "- fecha" in producto:
+                compra_data["fecha"] = producto["- fecha"]
             else:
-                compra_data["fecha"] = None  # Si no está, asignar None
+                compra_data["fecha"] = None
             compras.append(compra_data)
-    return spark.createDataFrame(compras)
+    
+    # Definir los tipos explícitamente, incluyendo el tipo para 'fecha'
+    schema = "numero_caja STRING, nombre_producto STRING, cantidad INT, precio_unitario DOUBLE, fecha STRING"
+    
+    return spark.createDataFrame(compras, schema)
 
-def calcular_metricas_con_fecha(df_final):
+def calcular_metricas(df_final):
     caja_con_mas_ventas = df_final.groupBy("numero_caja").agg(F.sum("total_venta").alias("total_vendido")).orderBy(F.col("total_vendido").desc()).first()["numero_caja"]
     caja_con_menos_ventas = df_final.groupBy("numero_caja").agg(F.sum("total_venta").alias("total_vendido")).orderBy(F.col("total_vendido").asc()).first()["numero_caja"]
     percentil_25, percentil_50, percentil_75 = calcular_percentiles(df_final)
@@ -42,15 +46,15 @@ def calcular_productos(df_final):
     producto_mayor_ingreso = df_final.groupBy("nombre_producto").agg(F.sum(F.col("cantidad") * F.col("precio_unitario")).alias("total_ingresos")).orderBy(F.col("total_ingresos").desc()).first()["nombre_producto"]
     return producto_mas_vendido, producto_mayor_ingreso
 
-def guardar_metricas_con_fecha(caja_con_mas_ventas, caja_con_menos_ventas, percentil_25, percentil_50, percentil_75, producto_mas_vendido, producto_mayor_ingreso, fecha, spark):
+def guardar_metricas(caja_con_mas_ventas, caja_con_menos_ventas, percentil_25, percentil_50, percentil_75, producto_mas_vendido, producto_mayor_ingreso, spark):
     metricas = [
-        Row(metrica="caja_con_mas_ventas", valor=caja_con_mas_ventas, fecha=fecha),
-        Row(metrica="caja_con_menos_ventas", valor=caja_con_menos_ventas, fecha=fecha),
-        Row(metrica="percentil_25_por_caja", valor=percentil_25, fecha=fecha),
-        Row(metrica="percentil_50_por_caja", valor=percentil_50, fecha=fecha),
-        Row(metrica="percentil_75_por_caja", valor=percentil_75, fecha=fecha),
-        Row(metrica="producto_mas_vendido_por_unidad", valor=producto_mas_vendido, fecha=fecha),
-        Row(metrica="producto_de_mayor_ingreso", valor=producto_mayor_ingreso, fecha=fecha)
+        Row(metrica="caja_con_mas_ventas", valor=caja_con_mas_ventas),
+        Row(metrica="caja_con_menos_ventas", valor=caja_con_menos_ventas),
+        Row(metrica="percentil_25_por_caja", valor=percentil_25),
+        Row(metrica="percentil_50_por_caja", valor=percentil_50),
+        Row(metrica="percentil_75_por_caja", valor=percentil_75),
+        Row(metrica="producto_mas_vendido_por_unidad", valor=producto_mas_vendido),
+        Row(metrica="producto_de_mayor_ingreso", valor=producto_mayor_ingreso)
     ]
     df_metricas = spark.createDataFrame(metricas)
     df_metricas.coalesce(1).write.mode("overwrite").csv("/src/output/metricas", header=True)
@@ -78,3 +82,4 @@ def calcular_total_cajas(df):
     
     # Calcular el total de ventas por caja
     return df_filtrado.groupBy("numero_caja").agg(F.sum("total_venta").alias("total_vendido"))
+
