@@ -2,7 +2,6 @@ import sys
 import funciones2  # Importar las funciones desde funciones2.py
 import psycopg2
 from pyspark.sql import SparkSession
-import pyspark.sql.functions as F
 
 # Crear la sesión de Spark
 spark = SparkSession.builder.appName("PuntosExtrasBigData").getOrCreate()
@@ -37,20 +36,27 @@ except ValueError as e:
 # Mostrar el DataFrame creado desde YAML combinado
 try:
     print("\n--- DataFrame creado desde YAML combinado ---")
-    datos_yaml.show()
+    datos_yaml.show(truncate=False)
 except Exception as e:
     print(f"Error mostrando el DataFrame: {e}")
     sys.exit(1)
 
 # Calcular las métricas necesarias
+try:
+    caja_con_mas_ventas, caja_con_menos_ventas, percentil_25, percentil_50, percentil_75 = funciones2.calcular_metricas(datos_yaml)
+    producto_mas_vendido, producto_mayor_ingreso = funciones2.calcular_productos(datos_yaml)
+except Exception as e:
+    print(f"Error calculando las métricas: {e}")
+    sys.exit(1)
+
 metricas_data = [
-    ("caja_con_mas_ventas", 1, "2024/10/16"),
-    ("caja_con_menos_ventas", 3, "2024/10/16"),
-    ("percentil_25_por_caja", 4428.0, "2024/10/16"),
-    ("percentil_50_por_caja", 11538.0, "2024/10/16"),
-    ("percentil_75_por_caja", 19548.0, "2024/10/16"),
-    ("producto_mas_vendido_por_unidad", "leche", "2024/10/16"),
-    ("producto_de_mayor_ingreso", "leche", "2024/10/16")
+    ("caja_con_mas_ventas", caja_con_mas_ventas, "2024/10/16"),
+    ("caja_con_menos_ventas", caja_con_menos_ventas, "2024/10/16"),
+    ("percentil_25_por_caja", percentil_25, "2024/10/16"),
+    ("percentil_50_por_caja", percentil_50, "2024/10/16"),
+    ("percentil_75_por_caja", percentil_75, "2024/10/16"),
+    ("producto_mas_vendido_por_unidad", producto_mas_vendido, "2024/10/16"),
+    ("producto_de_mayor_ingreso", producto_mayor_ingreso, "2024/10/16")
 ]
 
 # Mostrar las métricas calculadas
