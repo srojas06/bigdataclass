@@ -1,4 +1,5 @@
 import sys
+import os
 import funciones2  # Importar las funciones desde funciones2.py
 import psycopg2
 from pyspark.sql import SparkSession
@@ -11,7 +12,7 @@ spark = SparkSession.builder.appName("PuntosExtrasBigData").getOrCreate()
 spark.sparkContext.setLogLevel("ERROR")
 
 # Verificar si el archivo YAML se ha proporcionado como argumento
-if len(sys.argv) < 6:
+if len(sys.argv) < 2:
     print("Uso: programamain.py <ruta_archivo_yaml> <host> <usuario> <password> <nombre_bd>")
     sys.exit(1)
 
@@ -24,10 +25,6 @@ nombre_bd = sys.argv[5]
 
 # Leer el archivo YAML
 datos_yaml = funciones2.leer_archivo_yml(ruta_archivo_yaml)
-
-if not datos_yaml:
-    print("No se pudieron leer los datos del archivo YAML.")
-    sys.exit(1)
 
 # Convertir los datos a DataFrame de Spark
 df = funciones2.convertir_a_dataframe(datos_yaml, spark)
@@ -105,4 +102,3 @@ finally:
 
 # Finalizar la sesión de Spark
 spark.stop()
-
