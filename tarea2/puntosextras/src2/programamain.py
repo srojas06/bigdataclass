@@ -41,6 +41,7 @@ datos_yaml.show()
 # Conectar a la base de datos PostgreSQL y crear la tabla e insertar los datos
 conexion = None
 try:
+    print("Intentando conectar a PostgreSQL...")
     conexion = psycopg2.connect(
         host=host,
         port=puerto,
@@ -48,6 +49,7 @@ try:
         user=usuario,
         password=password
     )
+    print("Conexión exitosa a PostgreSQL")
     cursor = conexion.cursor()
 
     # Crear la tabla si no existe
@@ -73,7 +75,7 @@ try:
 
     for row in metricas_data:
         cursor.execute(
-            "INSERT INTO metricas (metrica, valor, fecha) VALUES (%s, %s, %s)",
+            "INSERT INTO metricas (metrica, valor, fecha) VALUES (%s, %s, %s) ON CONFLICT DO NOTHING",
             (row[0], str(row[1]), row[2])
         )
 
