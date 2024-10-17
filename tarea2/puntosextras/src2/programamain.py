@@ -16,16 +16,16 @@ if len(sys.argv) < 7:
     sys.exit(1)
 
 # Extraer argumentos
-rutas_archivos_yaml = sys.argv[1:-4]  # Todas las rutas YAML
-host = sys.argv[-4]  # Argumento para el host
-usuario = sys.argv[-3]  # Usuario de PostgreSQL
-password = sys.argv[-2]  # Contraseña
-nombre_bd = sys.argv[-1]  # Nombre de la base de datos
+rutas_archivos_yaml = sys.argv[1:6]  # Tomar las primeras 5 rutas YAML
+host = sys.argv[6]  # Argumento para el host
+usuario = sys.argv[7]  # Usuario de PostgreSQL
+password = sys.argv[8]  # Contraseña
+nombre_bd = sys.argv[9]  # Nombre de la base de datos
 puerto = "5432"  # Valor por defecto para el puerto
 
 # Verifica si se especificó el puerto como argumento adicional
-if len(sys.argv) > 7:
-    puerto = sys.argv[-5]
+if len(sys.argv) > 10:
+    puerto = sys.argv[10]
 
 # Leer y combinar los archivos YAML
 try:
