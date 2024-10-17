@@ -9,7 +9,7 @@ RUN apt-get update && \
     apt-get install -y \
     bash \
     nano \
-    postgresql-client \
+    postgresql \
     python3 \
     python3-pip \
     gcc \
@@ -21,7 +21,7 @@ RUN apt-get update && \
     ln -s /usr/bin/python3 /usr/bin/python
 
 # Descargar e instalar OpenJDK 14 si no está ya presente
-RUN wget https://github.com/AdoptOpenJDK/openjdk14-binaries/releases/download/jdk-14.0.2%2B12/OpenJDK14U-jdk_x64_linux_hotspot_14.0.2_12.tar.gz -O openjdk-14.0.2_linux-x64_bin.tar.gz && \
+RUN wget https://github.com/AdoptOpenJDK/openjdk14-binaries/releases/download/jdk-14.0.2%2B12/OpenJDK14U-jdk_x64_linux-hotspot_14.0.2_12.tar.gz -O openjdk-14.0.2_linux-x64_bin.tar.gz && \
     mkdir -p /opt/openjdk-14 && \
     tar -xzf openjdk-14.0.2_linux-x64_bin.tar.gz -C /opt/openjdk-14 --strip-components=1 && \
     rm openjdk-14.0.2_linux-x64_bin.tar.gz
@@ -44,9 +44,17 @@ RUN wget https://archive.apache.org/dist/spark/spark-3.4.0/spark-3.4.0-bin-hadoo
 ENV SPARK_HOME=/opt/spark
 ENV PATH="$SPARK_HOME/bin:$PATH"
 
+# Copiar el script de inicialización de PostgreSQL
+COPY setup_postgres.sh /docker-entrypoint-initdb.d/setup_postgres.sh
+
+# Establecer permisos de ejecución para el script de configuración
+RUN chmod +x /docker-entrypoint-initdb.d/setup_postgres.sh
+
 # Copiar los archivos de trabajo al contenedor
 COPY . /src
 
-# Comando por defecto
-CMD ["/bin/bash"]
+# Exponer el puerto para PostgreSQL
+EXPOSE 5432
 
+# Comando por defecto para mantener el contenedor ejecutándose
+CMD ["postgres"]
