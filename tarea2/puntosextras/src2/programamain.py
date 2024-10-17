@@ -1,5 +1,4 @@
 import sys
-import os
 import funciones2  # Importar las funciones desde funciones2.py
 import psycopg2
 from pyspark.sql import SparkSession
@@ -12,7 +11,7 @@ spark = SparkSession.builder.appName("PuntosExtrasBigData").getOrCreate()
 spark.sparkContext.setLogLevel("ERROR")
 
 # Verificar si el archivo YAML se ha proporcionado como argumento
-if len(sys.argv) < 2:
+if len(sys.argv) < 6:
     print("Uso: programamain.py <ruta_archivo_yaml> <host> <usuario> <password> <nombre_bd>")
     sys.exit(1)
 
@@ -42,7 +41,7 @@ caja_con_mas_ventas, caja_con_menos_ventas, percentil_25, percentil_50, percenti
 producto_mas_vendido, producto_mayor_ingreso = funciones2.calcular_productos(df)
 
 # Crear un DataFrame para las métricas con la fecha incluida (si está disponible)
-fecha = df.select(F.first("fecha", ignorenulls=True)).first()["first(fecha)"]
+fecha = df.select(F.first("fecha", ignorenulls=True)).first()["first(fecha, false)"]
 metricas_data = [
     ("caja_con_mas_ventas", caja_con_mas_ventas, fecha),
     ("caja_con_menos_ventas", caja_con_menos_ventas, fecha),
@@ -102,3 +101,4 @@ finally:
 
 # Finalizar la sesión de Spark
 spark.stop()
+
