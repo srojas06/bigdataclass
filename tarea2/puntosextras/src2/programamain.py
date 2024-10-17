@@ -40,16 +40,12 @@ except ValueError as e:
 # Crear la columna total_venta (cantidad * precio_unitario)
 df = df.withColumn("total_venta", F.col("cantidad") * F.col("precio_unitario"))
 
-# Manejar la columna 'fecha' en caso de que no esté presente
-if 'fecha' not in df.columns:
-    df = df.withColumn("fecha", F.lit(None).cast("string"))
-
 # Calcular las métricas
 caja_con_mas_ventas, caja_con_menos_ventas, percentil_25, percentil_50, percentil_75 = funciones2.calcular_metricas(df)
 producto_mas_vendido, producto_mayor_ingreso = funciones2.calcular_productos(df)
 
 # Crear un DataFrame para las métricas con la fecha incluida (si está disponible)
-fecha = df.select(F.first("fecha", ignorenulls=True)).first()["first(fecha, false)"]
+fecha = df.select(F.first(F.col("fecha"), ignorenulls=True)).first()["first(fecha, false)"]
 metricas_data = [
     ("caja_con_mas_ventas", caja_con_mas_ventas, fecha),
     ("caja_con_menos_ventas", caja_con_menos_ventas, fecha),
@@ -92,7 +88,7 @@ try:
     for row in metricas_data:
         cursor.execute(
             "INSERT INTO metricas (metrica, valor, fecha) VALUES (%s, %s, %s)",
-            (row[0], row[1], row[2])
+            (row[0], str(row[1]), row[2])
         )
 
     # Confirmar los cambios
