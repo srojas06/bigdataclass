@@ -24,14 +24,14 @@ def convertir_a_dataframe(datos_yaml, spark):
         productos = compra.get('compra', [])
         if isinstance(productos, list):
             for producto in productos:
-                if 'producto' in producto and 'nombre' in producto['producto'] and 'cantidad' in producto['producto'] and 'precio_unitario' in producto['producto']:
+                if 'nombre' in producto and 'cantidad' in producto and 'precio_unitario' in producto:
                     compras_list.append(
                         Row(
                             numero_caja=numero_caja,
-                            nombre=producto['producto']['nombre'],
-                            cantidad=producto['producto']['cantidad'],
-                            precio_unitario=producto['producto']['precio_unitario'],
-                            fecha=producto['producto'].get('fecha', None)  # Si no tiene fecha, se deja como None
+                            nombre=producto['nombre'],
+                            cantidad=producto['cantidad'],
+                            precio_unitario=producto['precio_unitario'],
+                            fecha=producto.get('fecha', None)  # Si no tiene fecha, se deja como None
                         )
                     )
 
@@ -72,4 +72,3 @@ def calcular_productos(df):
     producto_mayor_ingreso = df_ingresos.orderBy(F.desc('ingreso_total')).first()['nombre']
 
     return producto_mas_vendido, producto_mayor_ingreso
-
