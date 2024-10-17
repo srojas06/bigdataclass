@@ -7,7 +7,7 @@ def leer_archivo_yml(ruta):
     with open(ruta, 'r') as archivo:
         try:
             data = yaml.safe_load(archivo)
-            print("\n--- Datos leídos del archivo YAML ---")
+            print("\n--- Datos leídos del archivo YAML desde: {} ---".format(ruta))
             print(data)
             return data
         except yaml.YAMLError as error:
@@ -30,9 +30,15 @@ def leer_y_combinar_archivos_yaml(rutas, spark):
     df_total = dfs[0]
     for df in dfs[1:]:
         df_total = df_total.union(df)
-    
+
+    print("\n--- DataFrame después de la unión de todos los DataFrames ---")
+    df_total.show(truncate=False, n=1000)
+
     # Eliminar duplicados después de unir todos los DataFrames
     df_total = df_total.dropDuplicates()
+    
+    print("\n--- DataFrame después de eliminar duplicados ---")
+    df_total.show(truncate=False, n=1000)
     
     return df_total
 
