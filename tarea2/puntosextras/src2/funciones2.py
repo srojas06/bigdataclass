@@ -11,26 +11,31 @@ def leer_archivo_yml(ruta):
             return None
 
 def convertir_a_dataframe(datos_yaml, spark):
-    if not datos_yaml or 'compras' not in datos_yaml:
+    if not datos_yaml or not isinstance(datos_yaml, list):
         raise ValueError("El archivo YAML no contiene la estructura correcta. Verifique el contenido.")
 
     compras_list = []
 
-    # Procesar los datos YAML
-    for compra in datos_yaml['compras']:
-        productos = compra.get('compra', [])
-        for producto in productos:
-            producto_data = producto.get('producto', {})
-            if producto_data:  # Solo añadir si hay datos de producto
-                compras_list.append(
-                    Row(
-                        numero_caja=datos_yaml.get('numero_caja'),
-                        nombre=producto_data.get('nombre'),
-                        cantidad=producto_data.get('cantidad'),
-                        precio_unitario=producto_data.get('precio_unitario'),
-                        fecha=producto_data.get('fecha', None)
-                    )
-                )
+    # Procesar los datos YAML para adaptarse al nuevo formato
+    numero_caja = None
+    for item in datos_yaml:
+        if 'numero_caja' in item:
+            numero_caja = item['numero_caja']
+        elif 'compras' in item:
+            for compra in item['compras']:
+                if 'compra' in compra:
+                    for producto in compra['compra']:
+                        producto_data = producto.get('producto', {})
+                        if producto_data:  # Solo añadir si hay datos de producto
+                            compras_list.append(
+                                Row(
+                                    numero_caja=numero_caja,
+                                    nombre=producto_data.get('nombre'),
+                                    cantidad=producto_data.get('cantidad'),
+                                    precio_unitario=producto_data.get('precio_unitario'),
+                                    fecha=producto_data.get('fecha', None)
+                                )
+                            )
 
     # Debug: Verificar el contenido de la lista de compras
     if not compras_list:
