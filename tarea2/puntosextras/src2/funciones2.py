@@ -2,6 +2,7 @@ import yaml
 from pyspark.sql import Row
 import pyspark.sql.functions as F
 
+# Función para leer el archivo YAML
 def leer_archivo_yml(ruta):
     with open(ruta, 'r') as archivo:
         try:
@@ -10,6 +11,7 @@ def leer_archivo_yml(ruta):
             print(f"Error al leer el archivo YAML: {error}")
             return None
 
+# Función para convertir los datos YAML en un DataFrame de Spark
 def convertir_a_dataframe(datos_yaml, spark):
     if not datos_yaml or not isinstance(datos_yaml, dict) or 'numero_caja' not in datos_yaml or 'compras' not in datos_yaml:
         raise ValueError("El archivo YAML no contiene la estructura correcta. Verifique el contenido.")
@@ -20,16 +22,18 @@ def convertir_a_dataframe(datos_yaml, spark):
     # Procesar las compras
     for compra in datos_yaml['compras']:
         productos = compra.get('compra', [])
-        for producto in productos:
-            if 'nombre' in producto and 'cantidad' in producto and 'precio_unitario' in producto:
-                compras_list.append(
-                    Row(
-                        numero_caja=numero_caja,
-                        nombre=producto['nombre'],
-                        cantidad=producto['cantidad'],
-                        precio_unitario=producto['precio_unitario']
+        if isinstance(productos, list):
+            for producto in productos:
+                if 'producto' in producto and 'nombre' in producto['producto'] and 'cantidad' in producto['producto'] and 'precio_unitario' in producto['producto']:
+                    compras_list.append(
+                        Row(
+                            numero_caja=numero_caja,
+                            nombre=producto['producto']['nombre'],
+                            cantidad=producto['producto']['cantidad'],
+                            precio_unitario=producto['producto']['precio_unitario'],
+                            fecha=producto['producto'].get('fecha', None)  # Si no tiene fecha, se deja como None
+                        )
                     )
-                )
 
     # Verificar si la lista de compras tiene datos
     if not compras_list:
@@ -40,6 +44,7 @@ def convertir_a_dataframe(datos_yaml, spark):
 
     return df_spark
 
+# Función para calcular métricas sobre el DataFrame
 def calcular_metricas(df):
     # Crear la columna 'total_venta' (cantidad * precio_unitario)
     df = df.withColumn('total_venta', F.col('cantidad') * F.col('precio_unitario'))
@@ -56,13 +61,15 @@ def calcular_metricas(df):
 
     return caja_con_mas_ventas, caja_con_menos_ventas, percentil_25, percentil_50, percentil_75
 
+# Función para calcular métricas relacionadas a productos
 def calcular_productos(df):
     # Calcular el producto más vendido por unidad
     df_productos = df.groupBy('nombre').agg(F.sum('cantidad').alias('cantidad_total'))
     producto_mas_vendido = df_productos.orderBy(F.desc('cantidad_total')).first()['nombre']
 
     # Calcular el producto que generó más ingresos
-    df_ingresos = df.groupBy('nombre').agg(F.sum('total_venta').alias('ingreso_total'))
+    df_ingresos = df.groupBy('nombre').agg(F.sum(F.col('cantidad') * F.col('precio_unitario')).alias('ingreso_total'))
     producto_mayor_ingreso = df_ingresos.orderBy(F.desc('ingreso_total')).first()['nombre']
 
     return producto_mas_vendido, producto_mayor_ingreso
+
