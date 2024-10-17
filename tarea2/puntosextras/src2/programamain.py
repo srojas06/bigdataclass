@@ -25,14 +25,22 @@ nombre_bd = sys.argv[5]
 # Leer el archivo YAML
 datos_yaml = funciones2.leer_archivo_yml(ruta_archivo_yaml)
 
+# Verificar si hubo un problema al leer el archivo YAML
+if datos_yaml is None:
+    print("Error al leer el archivo YAML. Por favor, verifica el contenido.")
+    sys.exit(1)
+
 # Convertir los datos a DataFrame de Spark
-df = funciones2.convertir_a_dataframe(datos_yaml, spark)
+try:
+    df = funciones2.convertir_a_dataframe(datos_yaml, spark)
+except ValueError as e:
+    print(f"Error: {e}")
+    sys.exit(1)
 
 # Crear la columna total_venta (cantidad * precio_unitario)
 df = df.withColumn("total_venta", F.col("cantidad") * F.col("precio_unitario"))
 
 # Manejar la columna 'fecha' en caso de que no esté presente
-# Si la columna 'fecha' no existe, se llena con valores nulos para evitar errores
 if 'fecha' not in df.columns:
     df = df.withColumn("fecha", F.lit(None).cast("string"))
 
@@ -52,6 +60,7 @@ metricas_data = [
     ("producto_de_mayor_ingreso", producto_mayor_ingreso, fecha)
 ]
 
+# Definir el esquema del DataFrame de métricas
 schema_metricas = "Metrica STRING, Valor STRING, Fecha STRING"
 df_metricas = spark.createDataFrame(metricas_data, schema=schema_metricas)
 
@@ -101,4 +110,3 @@ finally:
 
 # Finalizar la sesión de Spark
 spark.stop()
-
