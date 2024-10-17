@@ -30,6 +30,10 @@ if datos_yaml is None:
     print("Error al leer el archivo YAML. Por favor, verifica el contenido.")
     sys.exit(1)
 
+# Imprimir el contenido del archivo YAML para depurar
+print("\n--- Contenido del archivo YAML ---")
+print(datos_yaml)
+
 # Convertir los datos a DataFrame de Spark
 try:
     df = funciones2.convertir_a_dataframe(datos_yaml, spark)
@@ -37,15 +41,36 @@ except ValueError as e:
     print(f"Error: {e}")
     sys.exit(1)
 
+# Verificar si el DataFrame fue creado correctamente
+if df.rdd.isEmpty():
+    print("Error: No se encontraron datos para crear el DataFrame.")
+    sys.exit(1)
+
+# Mostrar el DataFrame para verificar los datos
+print("\n--- DataFrame creado ---")
+df.show()
+
 # Crear la columna total_venta (cantidad * precio_unitario)
 df = df.withColumn("total_venta", F.col("cantidad") * F.col("precio_unitario"))
 
+# Mostrar el DataFrame después de agregar la columna 'total_venta'
+print("\n--- DataFrame con total_venta ---")
+df.show()
+
 # Calcular las métricas
+print("\n--- Calculando métricas ---")
 caja_con_mas_ventas, caja_con_menos_ventas, percentil_25, percentil_50, percentil_75 = funciones2.calcular_metricas(df)
 producto_mas_vendido, producto_mayor_ingreso = funciones2.calcular_productos(df)
+print(f"Caja con más ventas: {caja_con_mas_ventas}")
+print(f"Caja con menos ventas: {caja_con_menos_ventas}")
+print(f"Percentil 25: {percentil_25}")
+print(f"Percentil 50: {percentil_50}")
+print(f"Percentil 75: {percentil_75}")
+print(f"Producto más vendido por unidad: {producto_mas_vendido}")
+print(f"Producto de mayor ingreso: {producto_mayor_ingreso}")
 
 # Crear un DataFrame para las métricas con la fecha incluida (si está disponible)
-fecha = df.select(F.first(F.col("fecha"), ignorenulls=True)).first()["first(fecha, false)"]
+fecha = df.select(F.first(F.col("fecha"), ignorenulls=True)).first()["first(fecha, false)"] if 'fecha' in df.columns else None
 metricas_data = [
     ("caja_con_mas_ventas", caja_con_mas_ventas, fecha),
     ("caja_con_menos_ventas", caja_con_menos_ventas, fecha),
@@ -86,6 +111,7 @@ try:
 
     # Insertar los datos de las métricas en la tabla
     for row in metricas_data:
+        print(f"Insertando en la base de datos: {row}")  # Imprimir cada métrica antes de insertarla
         cursor.execute(
             "INSERT INTO metricas (metrica, valor, fecha) VALUES (%s, %s, %s)",
             (row[0], str(row[1]), row[2])
@@ -93,6 +119,7 @@ try:
 
     # Confirmar los cambios
     conexion.commit()
+    print("Inserción en la base de datos completada.")
 
 except (Exception, psycopg2.Error) as error:
     print("Error al conectar a la base de datos PostgreSQL", error)
@@ -106,3 +133,4 @@ finally:
 
 # Finalizar la sesión de Spark
 spark.stop()
+
