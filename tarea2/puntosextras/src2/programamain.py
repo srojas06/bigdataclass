@@ -1,5 +1,4 @@
 import sys
-import os
 import funciones2  # Importar las funciones desde funciones2.py
 import psycopg2
 from pyspark.sql import SparkSession
@@ -106,5 +105,4 @@ finally:
 
 # Finalizar la sesión de Spark
 spark.stop()
-
 
