@@ -11,8 +11,8 @@ spark = SparkSession.builder.appName("PuntosExtrasBigData").getOrCreate()
 spark.sparkContext.setLogLevel("ERROR")
 
 # Verificar si el archivo YAML se ha proporcionado como argumento
-if len(sys.argv) < 6:
-    print("Uso: programamain.py <ruta_archivo_yaml> <host> <usuario> <password> <nombre_bd>")
+if len(sys.argv) < 7:
+    print("Uso: programamain.py <ruta_archivo_yaml> <host> <usuario> <password> <nombre_bd> <puerto>")
     sys.exit(1)
 
 # Extraer argumentos
@@ -21,6 +21,7 @@ host = sys.argv[2]
 usuario = sys.argv[3]
 password = sys.argv[4]
 nombre_bd = sys.argv[5]
+puerto = sys.argv[6]  # Nuevo argumento para el puerto
 
 # Leer el archivo YAML
 datos_yaml = funciones2.leer_archivo_yml(ruta_archivo_yaml)
@@ -84,7 +85,8 @@ try:
         host=host,
         database=nombre_bd,
         user=usuario,
-        password=password
+        password=password,
+        port=puerto  # Usar el puerto proporcionado
     )
     cursor = conexion.cursor()
 
@@ -120,4 +122,5 @@ finally:
 
 # Finalizar la sesión de Spark
 spark.stop()
+
 
