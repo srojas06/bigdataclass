@@ -37,6 +37,8 @@ def convertir_a_dataframe(datos_yaml, spark):
                             fecha=producto['producto'].get('fecha', None)  # Si no tiene fecha, se deja como None
                         )
                     )
+                else:
+                    print(f"Producto no válido encontrado: {producto}")
 
     # Verificar si la lista de compras tiene datos
     if not compras_list:
