@@ -31,6 +31,9 @@ def leer_y_combinar_archivos_yaml(rutas, spark):
     for df in dfs[1:]:
         df_total = df_total.union(df)
     
+    # Eliminar duplicados después de unir todos los DataFrames
+    df_total = df_total.dropDuplicates()
+    
     return df_total
 
 # Función para convertir los datos YAML en un DataFrame de Spark
@@ -66,7 +69,7 @@ def convertir_a_dataframe(datos_yaml, spark):
     # Crear el DataFrame de Spark
     df_spark = spark.createDataFrame(compras_list)
     print("\n--- DataFrame creado desde YAML ---")
-    df_spark.show()
+    df_spark.show(truncate=False, n=1000)  # Mostrar más filas
 
     return df_spark
 
@@ -75,20 +78,21 @@ def calcular_metricas(df):
     # Crear la columna 'total_venta' (cantidad * precio_unitario)
     df = df.withColumn('total_venta', F.col('cantidad') * F.col('precio_unitario'))
     print("\n--- DataFrame con columna total_venta ---")
-    df.show()
+    df.show(truncate=False, n=1000)  # Mostrar más filas
 
     # Calcular caja con más ventas y caja con menos ventas
     df_cajas = df.groupBy('numero_caja').agg(F.sum('total_venta').alias('total_vendido'))
     print("\n--- Total vendido por caja ---")
-    df_cajas.show()
+    df_cajas.show(truncate=False, n=1000)
 
+    # Ordenar por la columna de 'total_vendido' para obtener las métricas
     caja_con_mas_ventas = df_cajas.orderBy(F.desc('total_vendido')).first()['numero_caja']
     caja_con_menos_ventas = df_cajas.orderBy('total_vendido').first()['numero_caja']
 
     # Calcular percentiles
-    percentil_25 = df.approxQuantile('total_venta', [0.25], 0.01)[0]
-    percentil_50 = df.approxQuantile('total_venta', [0.50], 0.01)[0]
-    percentil_75 = df.approxQuantile('total_venta', [0.75], 0.01)[0]
+    percentil_25 = df_cajas.approxQuantile('total_vendido', [0.25], 0.01)[0]
+    percentil_50 = df_cajas.approxQuantile('total_vendido', [0.50], 0.01)[0]
+    percentil_75 = df_cajas.approxQuantile('total_vendido', [0.75], 0.01)[0]
 
     print(f"Caja con más ventas: {caja_con_mas_ventas}")
     print(f"Caja con menos ventas: {caja_con_menos_ventas}")
@@ -103,13 +107,13 @@ def calcular_productos(df):
     # Calcular el producto más vendido por unidad
     df_productos = df.groupBy('nombre').agg(F.sum('cantidad').alias('cantidad_total'))
     print("\n--- Cantidad total vendida por producto ---")
-    df_productos.show()
+    df_productos.show(truncate=False, n=1000)
     producto_mas_vendido = df_productos.orderBy(F.desc('cantidad_total')).first()['nombre']
 
     # Calcular el producto que generó más ingresos
     df_ingresos = df.groupBy('nombre').agg(F.sum(F.col('cantidad') * F.col('precio_unitario')).alias('ingreso_total'))
     print("\n--- Ingreso total por producto ---")
-    df_ingresos.show()
+    df_ingresos.show(truncate=False, n=1000)
     producto_mayor_ingreso = df_ingresos.orderBy(F.desc('ingreso_total')).first()['nombre']
 
     print(f"Producto más vendido por unidad: {producto_mas_vendido}")
