@@ -6,7 +6,10 @@ import pyspark.sql.functions as F
 def leer_archivo_yml(ruta):
     with open(ruta, 'r') as archivo:
         try:
-            return yaml.safe_load(archivo)
+            data = yaml.safe_load(archivo)
+            print("\n--- Datos leídos del archivo YAML ---")
+            print(data)
+            return data
         except yaml.YAMLError as error:
             print(f"Error al leer el archivo YAML: {error}")
             return None
@@ -24,14 +27,14 @@ def convertir_a_dataframe(datos_yaml, spark):
         productos = compra.get('compra', [])
         if isinstance(productos, list):
             for producto in productos:
-                if 'nombre' in producto and 'cantidad' in producto and 'precio_unitario' in producto:
+                if 'producto' in producto and 'nombre' in producto['producto'] and 'cantidad' in producto['producto'] and 'precio_unitario' in producto['producto']:
                     compras_list.append(
                         Row(
                             numero_caja=numero_caja,
-                            nombre=producto['nombre'],
-                            cantidad=producto['cantidad'],
-                            precio_unitario=producto['precio_unitario'],
-                            fecha=producto.get('fecha', None)  # Si no tiene fecha, se deja como None
+                            nombre=producto['producto']['nombre'],
+                            cantidad=producto['producto']['cantidad'],
+                            precio_unitario=producto['producto']['precio_unitario'],
+                            fecha=producto['producto'].get('fecha', None)  # Si no tiene fecha, se deja como None
                         )
                     )
 
@@ -41,6 +44,8 @@ def convertir_a_dataframe(datos_yaml, spark):
 
     # Crear el DataFrame de Spark
     df_spark = spark.createDataFrame(compras_list)
+    print("\n--- DataFrame creado desde YAML ---")
+    df_spark.show()
 
     return df_spark
 
@@ -48,9 +53,14 @@ def convertir_a_dataframe(datos_yaml, spark):
 def calcular_metricas(df):
     # Crear la columna 'total_venta' (cantidad * precio_unitario)
     df = df.withColumn('total_venta', F.col('cantidad') * F.col('precio_unitario'))
+    print("\n--- DataFrame con columna total_venta ---")
+    df.show()
 
     # Calcular caja con más ventas y caja con menos ventas
     df_cajas = df.groupBy('numero_caja').agg(F.sum('total_venta').alias('total_vendido'))
+    print("\n--- Total vendido por caja ---")
+    df_cajas.show()
+
     caja_con_mas_ventas = df_cajas.orderBy(F.desc('total_vendido')).first()['numero_caja']
     caja_con_menos_ventas = df_cajas.orderBy('total_vendido').first()['numero_caja']
 
@@ -59,16 +69,29 @@ def calcular_metricas(df):
     percentil_50 = df.approxQuantile('total_venta', [0.50], 0.01)[0]
     percentil_75 = df.approxQuantile('total_venta', [0.75], 0.01)[0]
 
+    print(f"Caja con más ventas: {caja_con_mas_ventas}")
+    print(f"Caja con menos ventas: {caja_con_menos_ventas}")
+    print(f"Percentil 25: {percentil_25}")
+    print(f"Percentil 50: {percentil_50}")
+    print(f"Percentil 75: {percentil_75}")
+
     return caja_con_mas_ventas, caja_con_menos_ventas, percentil_25, percentil_50, percentil_75
 
 # Función para calcular métricas relacionadas a productos
 def calcular_productos(df):
     # Calcular el producto más vendido por unidad
     df_productos = df.groupBy('nombre').agg(F.sum('cantidad').alias('cantidad_total'))
+    print("\n--- Cantidad total vendida por producto ---")
+    df_productos.show()
     producto_mas_vendido = df_productos.orderBy(F.desc('cantidad_total')).first()['nombre']
 
     # Calcular el producto que generó más ingresos
     df_ingresos = df.groupBy('nombre').agg(F.sum(F.col('cantidad') * F.col('precio_unitario')).alias('ingreso_total'))
+    print("\n--- Ingreso total por producto ---")
+    df_ingresos.show()
     producto_mayor_ingreso = df_ingresos.orderBy(F.desc('ingreso_total')).first()['nombre']
+
+    print(f"Producto más vendido por unidad: {producto_mas_vendido}")
+    print(f"Producto de mayor ingreso: {producto_mayor_ingreso}")
 
     return producto_mas_vendido, producto_mayor_ingreso
