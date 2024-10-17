@@ -12,7 +12,7 @@ spark = SparkSession.builder.appName("PuntosExtrasBigData").getOrCreate()
 spark.sparkContext.setLogLevel("ERROR")
 
 # Verificar si el archivo YAML se ha proporcionado como argumento
-if len(sys.argv) < 6:
+if len(sys.argv) < 2:
     print("Uso: programamain.py <ruta_archivo_yaml> <host> <usuario> <password> <nombre_bd>")
     sys.exit(1)
 
@@ -32,12 +32,17 @@ df = funciones2.convertir_a_dataframe(datos_yaml, spark)
 # Crear la columna total_venta (cantidad * precio_unitario)
 df = df.withColumn("total_venta", F.col("cantidad") * F.col("precio_unitario"))
 
+# Manejar la columna 'fecha' en caso de que no esté presente
+# Si la columna 'fecha' no existe, se llena con valores nulos para evitar errores
+if 'fecha' not in df.columns:
+    df = df.withColumn("fecha", F.lit(None).cast("string"))
+
 # Calcular las métricas
 caja_con_mas_ventas, caja_con_menos_ventas, percentil_25, percentil_50, percentil_75 = funciones2.calcular_metricas(df)
 producto_mas_vendido, producto_mayor_ingreso = funciones2.calcular_productos(df)
 
-# Crear un DataFrame para las métricas con la fecha incluida
-fecha = df.select(F.first("fecha")).first()["first(fecha)"]
+# Crear un DataFrame para las métricas con la fecha incluida (si está disponible)
+fecha = df.select(F.first("fecha", ignorenulls=True)).first()["first(fecha, false)"]
 metricas_data = [
     ("caja_con_mas_ventas", caja_con_mas_ventas, fecha),
     ("caja_con_menos_ventas", caja_con_menos_ventas, fecha),
@@ -76,23 +81,25 @@ try:
     ''')
 
     # Insertar los datos de las métricas en la tabla
-    cursor.executemany(
-        "INSERT INTO metricas (metrica, valor, fecha) VALUES (%s, %s, %s)",
-        metricas_data
-    )
+    for row in metricas_data:
+        cursor.execute(
+            "INSERT INTO metricas (metrica, valor, fecha) VALUES (%s, %s, %s)",
+            (row[0], row[1], row[2])
+        )
 
     # Confirmar los cambios
     conexion.commit()
 
 except (Exception, psycopg2.Error) as error:
-    print("Error al conectar a la base de datos PostgreSQL:", error)
+    print("Error al conectar a la base de datos PostgreSQL", error)
 
 finally:
     # Cerrar la conexión a la base de datos
-    if 'conexion' in locals() and conexion:
+    if conexion:
         cursor.close()
         conexion.close()
         print("Conexión a PostgreSQL cerrada")
 
 # Finalizar la sesión de Spark
 spark.stop()
+
