@@ -30,6 +30,10 @@ if datos_yaml is None:
     print("Error al leer el archivo YAML. Por favor, verifica el contenido.")
     sys.exit(1)
 
+# Mostrar los datos leídos para depuración
+print("\n--- Datos leídos del archivo YAML ---")
+print(datos_yaml)
+
 # Convertir los datos a DataFrame de Spark
 try:
     df = funciones2.convertir_a_dataframe(datos_yaml, spark)
@@ -37,10 +41,14 @@ except ValueError as e:
     print(f"Error: {e}")
     sys.exit(1)
 
+# Mostrar el DataFrame creado desde YAML
+print("\n--- DataFrame creado desde YAML ---")
+df.show()
+
 # Crear la columna total_venta (cantidad * precio_unitario)
 df = df.withColumn("total_venta", F.col("cantidad") * F.col("precio_unitario"))
 
-# Mostrar el DataFrame después de agregar la columna total_venta
+# Mostrar el DataFrame con la columna total_venta
 print("\n--- DataFrame con columna total_venta ---")
 df.show()
 
@@ -70,6 +78,7 @@ print("\n--- Métricas con fecha ---")
 df_metricas.show()
 
 # Conectar a la base de datos PostgreSQL y crear la tabla e insertar los datos
+conexion = None
 try:
     conexion = psycopg2.connect(
         host=host,
@@ -103,11 +112,12 @@ except (Exception, psycopg2.Error) as error:
     print("Error al conectar a la base de datos PostgreSQL", error)
 
 finally:
-    # Cerrar la conexión a la base de datos
-    if conexion:
+    # Cerrar la conexión a la base de datos si fue exitosa
+    if conexion is not None:
         cursor.close()
         conexion.close()
         print("Conexión a PostgreSQL cerrada")
 
 # Finalizar la sesión de Spark
 spark.stop()
+
