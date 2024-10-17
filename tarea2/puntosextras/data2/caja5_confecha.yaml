@@ -1,0 +1,51 @@
+- numero_caja: 5
+- compras:
+  - compra:
+    - nombre: pan
+      cantidad: 5
+      fecha: 2024/10/16
+      precio_unitario: 1600
+  - compra:
+    - nombre: arroz
+      cantidad: 6
+      precio_unitario: 900
+    - nombre: jugo
+      cantidad: 7
+      fecha: 2024/10/16
+      precio_unitario: 1800
+  - compra:
+    - nombre: leche
+      cantidad: 4
+      precio_unitario: 550
+  - compra:
+    - nombre: queso
+      cantidad: 3
+      fecha: 2024/10/16
+      precio_unitario: 4000
+  - compra:
+    - nombre: galletas
+      cantidad: 9
+      precio_unitario: 450
+  - compra:
+    - nombre: pasta
+      cantidad: 8
+      fecha: 2024/10/16
+      precio_unitario: 1100
+  - compra:
+    - nombre: refresco
+      cantidad: 2
+      precio_unitario: 700
+  - compra:
+    - nombre: tomate
+      cantidad: 5
+      fecha: 2024/10/16
+      precio_unitario: 600
+  - compra:
+    - nombre: huevos
+      cantidad: 12
+      precio_unitario: 2500
+  - compra:
+    - nombre: jugo
+      cantidad: 10
+      fecha: 2024/10/16
+      precio_unitario: 1900

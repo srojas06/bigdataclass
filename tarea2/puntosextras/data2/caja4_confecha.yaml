@@ -1,0 +1,57 @@
+- numero_caja: 4
+- compras:
+  - compra:
+    - nombre: jugo
+      cantidad: 10
+      fecha: 2024/10/16
+      precio_unitario: 2200
+    - nombre: pan
+      cantidad: 5
+      precio_unitario: 1200
+  - compra:
+    - nombre: leche
+      cantidad: 8
+      fecha: 2024/10/16
+      precio_unitario: 700
+  - compra:
+    - nombre: pasta
+      cantidad: 9
+      precio_unitario: 800
+    - nombre: arroz
+      cantidad: 4
+      fecha: 2024/10/16
+      precio_unitario: 1500
+  - compra:
+    - nombre: papas
+      cantidad: 3
+      precio_unitario: 700
+  - compra:
+    - nombre: refresco
+      cantidad: 6
+      fecha: 2024/10/16
+      precio_unitario: 900
+  - compra:
+    - nombre: detergente
+      cantidad: 3
+      precio_unitario: 3000
+    - nombre: manzana
+      cantidad: 15
+      fecha: 2024/10/16
+      precio_unitario: 3200
+  - compra:
+    - nombre: leche
+      cantidad: 3
+      precio_unitario: 650
+  - compra:
+    - nombre: yogurt
+      cantidad: 6
+      fecha: 2024/10/16
+      precio_unitario: 1400
+  - compra:
+    - nombre: galletas
+      cantidad: 8
+      precio_unitario: 500
+  - compra:
+    - nombre: jugo
+      cantidad: 7
+      precio_unitario: 2000
