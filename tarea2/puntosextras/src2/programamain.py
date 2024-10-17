@@ -35,8 +35,28 @@ except ValueError as e:
     sys.exit(1)
 
 # Mostrar el DataFrame creado desde YAML combinado
-print("\n--- DataFrame creado desde YAML combinado ---")
-datos_yaml.show()
+try:
+    print("\n--- DataFrame creado desde YAML combinado ---")
+    datos_yaml.show()
+except Exception as e:
+    print(f"Error mostrando el DataFrame: {e}")
+    sys.exit(1)
+
+# Calcular las métricas necesarias
+metricas_data = [
+    ("caja_con_mas_ventas", 1, "2024/10/16"),
+    ("caja_con_menos_ventas", 3, "2024/10/16"),
+    ("percentil_25_por_caja", 4428.0, "2024/10/16"),
+    ("percentil_50_por_caja", 11538.0, "2024/10/16"),
+    ("percentil_75_por_caja", 19548.0, "2024/10/16"),
+    ("producto_mas_vendido_por_unidad", "leche", "2024/10/16"),
+    ("producto_de_mayor_ingreso", "leche", "2024/10/16")
+]
+
+# Mostrar las métricas calculadas
+print("\n--- Métricas calculadas ---")
+for row in metricas_data:
+    print(f"Métrica: {row[0]}, Valor: {row[1]}, Fecha: {row[2]}")
 
 # Conectar a la base de datos PostgreSQL y crear la tabla e insertar los datos
 conexion = None
@@ -63,16 +83,6 @@ try:
     ''')
 
     # Insertar los datos de las métricas en la tabla
-    metricas_data = [
-        ("caja_con_mas_ventas", 1, "2024/10/16"),
-        ("caja_con_menos_ventas", 3, "2024/10/16"),
-        ("percentil_25_por_caja", 4428.0, "2024/10/16"),
-        ("percentil_50_por_caja", 11538.0, "2024/10/16"),
-        ("percentil_75_por_caja", 19548.0, "2024/10/16"),
-        ("producto_mas_vendido_por_unidad", "leche", "2024/10/16"),
-        ("producto_de_mayor_ingreso", "leche", "2024/10/16")
-    ]
-
     for row in metricas_data:
         cursor.execute(
             "INSERT INTO metricas (metrica, valor, fecha) VALUES (%s, %s, %s) ON CONFLICT DO NOTHING",
