@@ -14,6 +14,25 @@ def leer_archivo_yml(ruta):
             print(f"Error al leer el archivo YAML: {error}")
             return None
 
+# Nueva función para leer y combinar múltiples archivos YAML
+def leer_y_combinar_archivos_yaml(rutas, spark):
+    dfs = []
+    for ruta in rutas:
+        datos_yaml = leer_archivo_yml(ruta)
+        if datos_yaml is not None:
+            df = convertir_a_dataframe(datos_yaml, spark)
+            dfs.append(df)
+    
+    if not dfs:
+        raise ValueError("No se pudo crear ningún DataFrame a partir de los archivos YAML proporcionados.")
+    
+    # Unir todos los DataFrames
+    df_total = dfs[0]
+    for df in dfs[1:]:
+        df_total = df_total.union(df)
+    
+    return df_total
+
 # Función para convertir los datos YAML en un DataFrame de Spark
 def convertir_a_dataframe(datos_yaml, spark):
     if not datos_yaml or not isinstance(datos_yaml, dict) or 'numero_caja' not in datos_yaml or 'compras' not in datos_yaml:
