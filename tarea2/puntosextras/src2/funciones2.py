@@ -10,38 +10,50 @@ def conectar_base_de_datos():
             port="5433",
             database="postgres",
             user="postgres",
-            password="testPassword",
-            connect_timeout=5  # Esto ayudará a detectar problemas de conexión más rápidamente
+            password="testPassword"
         )
         print("Conexión exitosa a la base de datos.")
         return conn
     except Exception as e:
         print(f"Error al conectar a la base de datos: {e}")
         return None
-        
+
 def leer_archivo_yml(ruta):
+    # Leer archivo YAML y convertirlo en datos de Python
     with open(ruta, 'r') as archivo:
         return yaml.safe_load(archivo)
 
 def convertir_a_dataframe(dato_yaml, spark):
+    # Convertir el archivo YAML en una lista de diccionarios para crear el DataFrame
     compras = []
     for compra in dato_yaml[1]["- compras"]:
         for producto in compra["- compra"]:
-            compras.append({
+            compra_data = {
                 "numero_caja": dato_yaml[0]["- numero_caja"],
                 "nombre_producto": producto["- nombre"],
                 "cantidad": producto["cantidad"],
                 "precio_unitario": producto["precio_unitario"]
-            })
+            }
+            # Verificar si la clave 'fecha' está presente en el producto y agregarla si está
+            if "fecha" in producto:
+                compra_data["fecha"] = producto["fecha"]
+            else:
+                compra_data["fecha"] = None  # Si no hay fecha, poner None
+            
+            compras.append(compra_data)
+    
+    # Crear el DataFrame a partir de la lista de compras
     return spark.createDataFrame(compras)
 
 def calcular_metricas(df_final):
+    # Cálculo de métricas para las ventas por caja
     caja_con_mas_ventas = df_final.groupBy("numero_caja").agg(F.sum("total_venta").alias("total_vendido")).orderBy(F.col("total_vendido").desc()).first()["numero_caja"]
     caja_con_menos_ventas = df_final.groupBy("numero_caja").agg(F.sum("total_venta").alias("total_vendido")).orderBy(F.col("total_vendido").asc()).first()["numero_caja"]
     percentil_25, percentil_50, percentil_75 = calcular_percentiles(df_final)
     return caja_con_mas_ventas, caja_con_menos_ventas, percentil_25, percentil_50, percentil_75
 
 def calcular_percentiles(df_final):
+    # Cálculo de percentiles para las ventas por caja
     total_por_caja = df_final.groupBy("numero_caja").agg(F.sum("total_venta").alias("total_vendido"))
     percentil_25 = total_por_caja.selectExpr("percentile_approx(total_vendido, 0.25)").first()[0]
     percentil_50 = total_por_caja.selectExpr("percentile_approx(total_vendido, 0.50)").first()[0]
@@ -49,6 +61,7 @@ def calcular_percentiles(df_final):
     return percentil_25, percentil_50, percentil_75
 
 def calcular_productos(df_final):
+    # Calcular el producto más vendido y el producto con mayor ingreso
     producto_mas_vendido = df_final.groupBy("nombre_producto").agg(F.sum("cantidad").alias("total_vendido")).orderBy(F.col("total_vendido").desc()).first()["nombre_producto"]
     producto_mayor_ingreso = df_final.groupBy("nombre_producto").agg(F.sum(F.col("cantidad") * F.col("precio_unitario")).alias("total_ingresos")).orderBy(F.col("total_ingresos").desc()).first()["nombre_producto"]
     return producto_mas_vendido, producto_mayor_ingreso
