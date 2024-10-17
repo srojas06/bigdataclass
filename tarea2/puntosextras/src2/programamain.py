@@ -43,6 +43,7 @@ except Exception as e:
 
 # Calcular las métricas necesarias
 try:
+    print("\n--- Iniciando el cálculo de métricas ---")
     caja_con_mas_ventas, caja_con_menos_ventas, percentil_25, percentil_50, percentil_75 = funciones2.calcular_metricas(datos_yaml)
     producto_mas_vendido, producto_mayor_ingreso = funciones2.calcular_productos(datos_yaml)
 except Exception as e:
