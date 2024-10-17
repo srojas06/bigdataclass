@@ -20,7 +20,7 @@ RUN apt-get update && \
     pip3 install pyspark pytest pyyaml psycopg2-binary && \
     ln -s /usr/bin/python3 /usr/bin/python
 
-# Descargar e instalar OpenJDK 14
+# Descargar e instalar OpenJDK 14 si no está ya presente
 RUN wget https://github.com/AdoptOpenJDK/openjdk14-binaries/releases/download/jdk-14.0.2%2B12/OpenJDK14U-jdk_x64_linux_hotspot_14.0.2_12.tar.gz -O openjdk-14.0.2_linux-x64_bin.tar.gz && \
     mkdir -p /opt/openjdk-14 && \
     tar -xzf openjdk-14.0.2_linux-x64_bin.tar.gz -C /opt/openjdk-14 --strip-components=1 && \
@@ -29,6 +29,10 @@ RUN wget https://github.com/AdoptOpenJDK/openjdk14-binaries/releases/download/jd
 # Establecer JAVA_HOME y agregarlo al PATH
 ENV JAVA_HOME=/opt/openjdk-14
 ENV PATH="$JAVA_HOME/bin:$PATH"
+
+# Verificar que JAVA_HOME esté configurado correctamente
+RUN echo "JAVA_HOME is set to: $JAVA_HOME" && \
+    $JAVA_HOME/bin/java -version
 
 # Descargar e instalar Apache Spark
 RUN wget https://downloads.apache.org/spark/spark-3.4.0/spark-3.4.0-bin-hadoop3.tgz && \
@@ -45,3 +49,4 @@ COPY . /src
 
 # Comando por defecto
 CMD ["/bin/bash"]
+
