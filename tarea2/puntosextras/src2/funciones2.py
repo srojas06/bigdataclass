@@ -1,79 +1,64 @@
 import yaml
-from pyspark.sql import SparkSession, Row
-import pyspark.sql.functions as F
+from pyspark.sql import Row
 
-# Función para leer archivo YAML
-def leer_archivo_yml(ruta_archivo):
-    with open(ruta_archivo, 'r') as file:
-        datos = yaml.safe_load(file)
-    return datos
+def leer_archivo_yml(ruta):
+    with open(ruta, 'r') as archivo:
+        try:
+            return yaml.safe_load(archivo)
+        except yaml.YAMLError as error:
+            print(f"Error al leer el archivo YAML: {error}")
+            return None
 
-# Función para convertir el archivo YAML a un DataFrame de Spark
 def convertir_a_dataframe(datos_yaml, spark):
+    if not datos_yaml or 'compras' not in datos_yaml:
+        raise ValueError("El archivo YAML no contiene la estructura correcta. Verifique el contenido.")
+
     compras_list = []
 
-    for dato_yaml in datos_yaml:
-        numero_caja = dato_yaml.get('- numero_caja', None)
-        compras = dato_yaml.get('- compras', [])
+    # Procesar los datos YAML
+    for compra in datos_yaml['compras']:
+        productos = compra.get('compra', [])
+        for producto in productos:
+            producto_data = producto.get('producto', {})
+            if producto_data:  # Solo añadir si hay datos de producto
+                compras_list.append(
+                    Row(
+                        nombre=producto_data.get('nombre'),
+                        cantidad=producto_data.get('cantidad'),
+                        precio_unitario=producto_data.get('precio_unitario'),
+                        fecha=producto_data.get('fecha', None)
+                    )
+                )
 
-        # Verificar si la lista de compras está vacía
-        if not compras:
-            continue
-
-        for compra in compras:
-            productos = compra.get('- compra', [])
-
-            for producto in productos:
-                nombre = producto.get('- nombre', None)
-                cantidad = producto.get('cantidad', 0)
-                precio_unitario = producto.get('precio_unitario', 0)
-                fecha = producto.get('fecha', None)  # Fecha es opcional
-
-                # Agregar datos a la lista de compras
-                compras_list.append({
-                    'numero_caja': numero_caja,
-                    'nombre': nombre,
-                    'cantidad': cantidad,
-                    'precio_unitario': precio_unitario,
-                    'fecha': fecha
-                })
-
-    # Verificar si la lista tiene datos antes de crear el DataFrame
+    # Debug: Verificar el contenido de la lista de compras
     if not compras_list:
         raise ValueError("No se encontraron datos para crear el DataFrame.")
 
-    # Crear el DataFrame de Spark
-    df_spark = spark.createDataFrame([Row(**compra) for compra in compras_list])
+    # Crear el DataFrame
+    df_spark = spark.createDataFrame(compras_list)
+
     return df_spark
 
-# Función para calcular métricas
 def calcular_metricas(df):
-    caja_con_mas_ventas = df.groupBy('numero_caja') \
-        .agg(F.sum('total_venta').alias('total_ventas')) \
-        .orderBy(F.desc('total_ventas')) \
-        .first()['numero_caja']
+    # Calcular caja con más ventas y caja con menos ventas
+    df_cajas = df.groupBy('nombre').agg(F.sum('total_venta').alias('total_vendido'))
+    caja_con_mas_ventas = df_cajas.orderBy(F.desc('total_vendido')).first()['nombre']
+    caja_con_menos_ventas = df_cajas.orderBy('total_vendido').first()['nombre']
 
-    caja_con_menos_ventas = df.groupBy('numero_caja') \
-        .agg(F.sum('total_venta').alias('total_ventas')) \
-        .orderBy(F.asc('total_ventas')) \
-        .first()['numero_caja']
-
-    percentiles = df.approxQuantile('total_venta', [0.25, 0.5, 0.75], 0.01)
-    percentil_25, percentil_50, percentil_75 = percentiles
+    # Calcular percentiles
+    percentil_25 = df.approxQuantile('total_venta', [0.25], 0.01)[0]
+    percentil_50 = df.approxQuantile('total_venta', [0.50], 0.01)[0]
+    percentil_75 = df.approxQuantile('total_venta', [0.75], 0.01)[0]
 
     return caja_con_mas_ventas, caja_con_menos_ventas, percentil_25, percentil_50, percentil_75
 
-# Función para calcular métricas de productos
 def calcular_productos(df):
-    producto_mas_vendido = df.groupBy('nombre') \
-        .agg(F.sum('cantidad').alias('total_cantidad')) \
-        .orderBy(F.desc('total_cantidad')) \
-        .first()['nombre']
+    # Calcular el producto más vendido por unidad
+    df_productos = df.groupBy('nombre').agg(F.sum('cantidad').alias('cantidad_total'))
+    producto_mas_vendido = df_productos.orderBy(F.desc('cantidad_total')).first()['nombre']
 
-    producto_mayor_ingreso = df.withColumn('ingreso', F.col('cantidad') * F.col('precio_unitario')) \
-        .groupBy('nombre') \
-        .agg(F.sum('ingreso').alias('total_ingreso')) \
-        .orderBy(F.desc('total_ingreso')) \
-        .first()['nombre']
+    # Calcular el producto que generó más ingresos
+    df_ingresos = df.groupBy('nombre').agg(F.sum('total_venta').alias('ingreso_total'))
+    producto_mayor_ingreso = df_ingresos.orderBy(F.desc('ingreso_total')).first()['nombre']
 
     return producto_mas_vendido, producto_mayor_ingreso
