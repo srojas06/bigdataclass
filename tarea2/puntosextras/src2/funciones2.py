@@ -24,10 +24,10 @@ def leer_y_combinar_archivos_yaml(rutas, spark):
         if datos_yaml is not None:
             df = convertir_a_dataframe(datos_yaml, spark)
             dfs.append(df)
-    
+
     if not dfs:
         raise ValueError("No se pudo crear ningún DataFrame a partir de los archivos YAML proporcionados.")
-    
+
     # Unir todos los DataFrames
     df_total = dfs[0]
     for df in dfs[1:]:
@@ -38,10 +38,10 @@ def leer_y_combinar_archivos_yaml(rutas, spark):
 
     # Eliminar duplicados después de unir todos los DataFrames
     df_total = df_total.dropDuplicates()
-    
+
     print("\n--- DataFrame después de eliminar duplicados ---")
     df_total.show(truncate=False, n=1000)
-    
+
     return df_total
 
 # Función para convertir los datos YAML en un DataFrame de Spark
@@ -131,8 +131,15 @@ def calcular_productos(df):
 
 # Función para generar un DataFrame con métricas incluyendo la fecha
 def generar_dataframe_metricas_con_fecha(metricas_data, spark):
-    # Convertir todos los valores a float para evitar conflictos de tipos
-    rows = [Row(metrica=metrica, valor=float(valor), fecha=fecha) for metrica, valor, fecha in metricas_data]
+    # Crear una lista de Rows a partir de los datos de métricas
+    rows = []
+    for metrica, valor, fecha in metricas_data:
+        # Asegurarse de que el valor sea del tipo correcto (string para métricas como 'leche')
+        if isinstance(valor, (int, float)):
+            valor = float(valor)
+        else:
+            valor = str(valor)
+        rows.append(Row(metrica=metrica, valor=valor, fecha=fecha))
 
     # Crear DataFrame a partir de las filas
     df_metricas = spark.createDataFrame(rows)
