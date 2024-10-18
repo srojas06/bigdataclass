@@ -2,6 +2,7 @@ import yaml
 from pyspark.sql import Row
 import pyspark.sql.functions as F
 from pyspark.sql import SparkSession
+from pyspark.sql.types import DoubleType
 
 # Función para leer el archivo YAML
 def leer_archivo_yml(ruta):
@@ -130,12 +131,12 @@ def calcular_productos(df):
 
 # Función para generar un DataFrame con métricas incluyendo la fecha
 def generar_dataframe_metricas_con_fecha(metricas_data, spark):
-    # Crear una lista de Rows a partir de los datos de métricas
-    rows = [Row(metrica=metrica, valor=valor, fecha=fecha) for metrica, valor, fecha in metricas_data]
-    
+    # Convertir todos los valores a float para evitar conflictos de tipos
+    rows = [Row(metrica=metrica, valor=float(valor), fecha=fecha) for metrica, valor, fecha in metricas_data]
+
     # Crear DataFrame a partir de las filas
     df_metricas = spark.createDataFrame(rows)
     print("\n--- DataFrame de métricas con fecha ---")
     df_metricas.show(truncate=False, n=1000)  # Mostrar el DataFrame completo
-    
+
     return df_metricas
