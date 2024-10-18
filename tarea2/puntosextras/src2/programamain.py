@@ -72,10 +72,15 @@ metricas_data = [
     ("producto_de_mayor_ingreso", producto_mayor_ingreso, "2024/10/16")
 ]
 
+# Mostrar las métricas calculadas
+print("\n--- Métricas calculadas ---")
+for row in metricas_data:
+    print(f"Métrica: {row[0]}, Valor: {row[1]}, Fecha: {row[2]}")
+
 # Generar el DataFrame de métricas con fecha
 try:
+    print("\n--- Generando DataFrame de métricas con fecha ---")
     df_metricas = funciones2.generar_dataframe_metricas_con_fecha(metricas_data, spark)
-    print("\n--- DataFrame de Métricas con Fecha ---")
     df_metricas.show(truncate=False)
 except Exception as e:
     print(f"Error generando el DataFrame de métricas con fecha: {e}")
