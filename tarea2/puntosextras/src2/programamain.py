@@ -9,6 +9,11 @@ spark = SparkSession.builder.appName("PuntosExtrasBigData").getOrCreate()
 # Deshabilitar los logs innecesarios de Spark
 spark.sparkContext.setLogLevel("ERROR")
 
+# Verificar si se han proporcionado al menos 5 argumentos (host, usuario, password, nombre_bd, puerto opcional)
+if len(sys.argv) < 5 or len(sys.argv) > 6:
+    print("Uso: programamain.py <host> <usuario> <password> <nombre_bd> [<puerto>]")
+    sys.exit(1)
+
 # Definir las rutas de los archivos YAML con 'confecha'
 rutas_archivos_yaml = [
     '/src/data2/caja1_confecha.yaml',
@@ -19,10 +24,6 @@ rutas_archivos_yaml = [
 ]
 
 # Extraer los parámetros de conexión de la base de datos
-if len(sys.argv) < 5:
-    print("Uso: programamain.py <host> <usuario> <password> <nombre_bd> [<puerto>]")
-    sys.exit(1)
-
 host = sys.argv[1]  # Argumento para el host
 usuario = sys.argv[2]  # Usuario de PostgreSQL
 password = sys.argv[3]  # Contraseña
@@ -30,8 +31,12 @@ nombre_bd = sys.argv[4]  # Nombre de la base de datos
 puerto = "5432"  # Valor por defecto para el puerto
 
 # Verifica si se especificó el puerto como argumento adicional
-if len(sys.argv) > 5:
-    puerto = sys.argv[5]
+if len(sys.argv) == 6:
+    try:
+        puerto = int(sys.argv[5])
+    except ValueError:
+        print("Error: El puerto debe ser un número entero válido.")
+        sys.exit(1)
 
 # Leer y combinar los archivos YAML
 try:
