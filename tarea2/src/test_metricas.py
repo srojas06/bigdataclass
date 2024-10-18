@@ -1,12 +1,12 @@
 import pytest
 from pyspark.sql import SparkSession
-import funciones  # Importar las funciones desde el archivo funciones.py
+import funciones  # Importa las funciones desde el archivo funciones.py
 import pyspark.sql.functions as F
 
-# Crear la sesión de Spark
+# Crea la sesión de Spark
 spark = SparkSession.builder.appName("PruebasMetricas").getOrCreate()
 
-# Deshabilitar los logs innecesarios de Spark
+# Deshabilita los logs innecesarios de Spark
 spark.sparkContext.setLogLevel("ERROR")
 
 # 1. Prueba para la caja con más ventas
@@ -101,7 +101,7 @@ def test_metricas_cajas_con_ventas_iguales():
     assert metricas[0] in ["caja1", "caja2"]  # Puede ser cualquiera
     assert metricas[1] in ["caja1", "caja2"]  # Puede ser cualquiera
 
-# Cerrar la sesión de Spark al final de las pruebas
+# Cierra spark
 @pytest.fixture(scope="session", autouse=True)
 def finalizar_spark():
     yield
