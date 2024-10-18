@@ -1,12 +1,12 @@
 import pytest
 from pyspark.sql import SparkSession
 from pyspark.sql.types import StructType, StructField, StringType, IntegerType
-import funciones  # Importar las funciones desde el archivo funciones.py
+import funciones  # Importa las funciones desde el archivo funciones.py
 
-# Crear la sesión de Spark
+# Crea la sesión de Spark
 spark = SparkSession.builder.appName("PruebasTotalProductos").getOrCreate()
 
-# Deshabilitar los logs innecesarios de Spark
+# Deshabilita los logs innecesarios de Spark
 spark.sparkContext.setLogLevel("ERROR")
 
 # 1. Prueba con múltiples productos
@@ -126,7 +126,7 @@ def test_total_productos_con_decimales():
     
     assert resultado.collect() == esperado
 
-# Cerrar la sesión de Spark al final de las pruebas
+# Cerrar la sesión de Spark 
 @pytest.fixture(scope="session", autouse=True)
 def finalizar_spark():
     yield
