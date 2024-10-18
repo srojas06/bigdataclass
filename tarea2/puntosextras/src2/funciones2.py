@@ -1,6 +1,7 @@
 import yaml
 from pyspark.sql import Row
 import pyspark.sql.functions as F
+from pyspark.sql import SparkSession
 
 # Función para leer el archivo YAML
 def leer_archivo_yml(ruta):
@@ -127,16 +128,14 @@ def calcular_productos(df):
 
     return producto_mas_vendido, producto_mayor_ingreso
 
-# Nueva función para generar un DataFrame con tres columnas (metrica, valor, fecha)
-def generar_dataframe_metricas_con_fecha(metrica_tuples, spark):
-    """
-    Genera un DataFrame con las columnas metrica, valor, y fecha a partir de una lista de tuplas.
-    :return: DataFrame de Spark con las metricas.
-    """
-    rows = [Row(metrica=metrica, valor=str(valor), fecha=fecha) for metrica, valor, fecha in metrica_tuples]
-    df_metricas = spark.createDataFrame(rows)
+# Función para generar un DataFrame con métricas incluyendo la fecha
+def generar_dataframe_metricas_con_fecha(metricas_data, spark):
+    # Crear una lista de Rows a partir de los datos de métricas
+    rows = [Row(metrica=metrica, valor=valor, fecha=fecha) for metrica, valor, fecha in metricas_data]
     
-    print("\n--- DataFrame de métricas con columna fecha ---")
-    df_metricas.show(truncate=False, n=1000)
+    # Crear DataFrame a partir de las filas
+    df_metricas = spark.createDataFrame(rows)
+    print("\n--- DataFrame de métricas con fecha ---")
+    df_metricas.show(truncate=False, n=1000)  # Mostrar el DataFrame completo
     
     return df_metricas
