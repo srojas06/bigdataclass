@@ -3,7 +3,7 @@ from pyspark.sql import SparkSession
 import funciones  # Importar las funciones desde el archivo funciones.py
 import pyspark.sql.functions as F
 
-# Crear la sesión de Spark
+# Crea la sesión de Spark
 spark = SparkSession.builder.appName("PruebasTotalCajas").getOrCreate()
 
 # Deshabilitar los logs innecesarios de Spark
@@ -123,7 +123,7 @@ def test_total_cajas_con_ventas_extremas():
 
 
 
-# Cerrar la sesión de Spark al final de las pruebas
+# Cierra la sesion
 @pytest.fixture(scope="session", autouse=True)
 def finalizar_spark():
     yield
