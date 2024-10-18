@@ -126,3 +126,17 @@ def calcular_productos(df):
     print(f"Producto de mayor ingreso: {producto_mayor_ingreso}")
 
     return producto_mas_vendido, producto_mayor_ingreso
+
+# Nueva función para generar un DataFrame con tres columnas (metrica, valor, fecha)
+def generar_dataframe_metricas_con_fecha(metrica_tuples, spark):
+    """
+    Genera un DataFrame con las columnas metrica, valor, y fecha a partir de una lista de tuplas.
+    :return: DataFrame de Spark con las metricas.
+    """
+    rows = [Row(metrica=metrica, valor=str(valor), fecha=fecha) for metrica, valor, fecha in metrica_tuples]
+    df_metricas = spark.createDataFrame(rows)
+    
+    print("\n--- DataFrame de métricas con columna fecha ---")
+    df_metricas.show(truncate=False, n=1000)
+    
+    return df_metricas
