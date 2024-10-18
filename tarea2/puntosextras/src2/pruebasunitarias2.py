@@ -1,9 +1,9 @@
 import pytest
 from pyspark.sql import SparkSession
 from pyspark.sql import Row
-import funciones2  # Importar las funciones desde el archivo funciones2.py
+import funciones2  # Importa las funciones desde el archivo funciones2.py
 
-# Crea la sesión de Spark
+
 spark = SparkSession.builder.appName("PruebasMetricasConFecha").getOrCreate()
 
 
@@ -22,10 +22,10 @@ def test_estructura_dataframe_metricas():
     ]
     expected_df = spark.createDataFrame([Row(metrica=x[0], valor=x[1], fecha=x[2]) for x in metricas_data])
     
-    # Generar el DataFrame usando la función
+    # Genera el DataFrame usando la función
     df_metricas = funciones2.generar_dataframe_metricas_con_fecha(metricas_data, spark)
 
-    # Comprobar que el DataFrame generado tiene las mismas filas que el esperado
+    # Comprueba que el DataFrame generado tiene las mismas filas que el esperado
     assert df_metricas.collect() == expected_df.collect()
 
 # 2. Prueba para verificar que el DataFrame tiene los valores correctos (incluso con tipos diferentes)
@@ -41,10 +41,10 @@ def test_valores_dataframe_metricas():
     ]
     expected_df = spark.createDataFrame([Row(metrica=x[0], valor=str(x[1]) if isinstance(x[1], str) else float(x[1]), fecha=x[2]) for x in metricas_data])
     
-    # Generar el DataFrame usando la función
+    # Genera el DataFrame usando la función
     df_metricas = funciones2.generar_dataframe_metricas_con_fecha(metricas_data, spark)
 
-    # Comprobar que el DataFrame generado tiene los mismos valores que el esperado
+    # Comprueba que el DataFrame generado tiene los mismos valores que el esperado
     assert df_metricas.collect() == expected_df.collect()
 
 # 3. Prueba para verificar que el DataFrame tiene los nombres de las columnas correctos
