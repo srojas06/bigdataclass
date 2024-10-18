@@ -8,7 +8,7 @@ END
 $$;
 
 -- Conectar a la base de datos
--- Esta línea puede omitirse si el script se ejecuta automáticamente con psql ya conectado a la base de datos
+
 
 -- Crear la tabla para almacenar los datos de ventas por caja
 CREATE TABLE IF NOT EXISTS ventas_cajas (
