@@ -1,12 +1,12 @@
 import pytest
 from pyspark.sql import SparkSession
-import funciones  # Importar las funciones desde el archivo funciones.py
+import funciones  # Importa las funciones desde el archivo funciones.py
 import pyspark.sql.functions as F
 
 # Crea la sesión de Spark
 spark = SparkSession.builder.appName("PruebasTotalCajas").getOrCreate()
 
-# Deshabilitar los logs innecesarios de Spark
+# Deshabilita los logs innecesarios de Spark
 spark.sparkContext.setLogLevel("ERROR")
 
 # 1. Prueba con múltiples cajas y ventas positivas
