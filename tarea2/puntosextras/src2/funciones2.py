@@ -16,7 +16,7 @@ def leer_archivo_yml(ruta):
             print(f"Error al leer el archivo YAML: {error}")
             return None
 
-# Nueva función para leer y combinar múltiples archivos YAML
+# función para leer y combinar múltiples archivos YAML
 def leer_y_combinar_archivos_yaml(rutas, spark):
     dfs = []
     for ruta in rutas:
@@ -52,7 +52,7 @@ def convertir_a_dataframe(datos_yaml, spark):
     numero_caja = datos_yaml['numero_caja']
     compras_list = []
 
-    # Procesar las compras
+    # Procesa las compras
     for compra in datos_yaml['compras']:
         productos = compra.get('compra', [])
         if isinstance(productos, list):
@@ -70,34 +70,34 @@ def convertir_a_dataframe(datos_yaml, spark):
                 else:
                     print(f"Producto no válido encontrado: {producto}")
 
-    # Verificar si la lista de compras tiene datos
+    # Verificamos si la lista de compras tiene datos
     if not compras_list:
         raise ValueError("No se encontraron datos para crear el DataFrame.")
 
-    # Crear el DataFrame de Spark
+    # Creamos el DataFrame de Spark
     df_spark = spark.createDataFrame(compras_list)
     print("\n--- DataFrame creado desde YAML ---")
-    df_spark.show(truncate=False, n=1000)  # Mostrar más filas
+    df_spark.show(truncate=False, n=1000)  
 
     return df_spark
 
 # Función para calcular métricas sobre el DataFrame
 def calcular_metricas(df):
-    # Crear la columna 'total_venta' (cantidad * precio_unitario)
+    # Crea la columna 'total_venta' (cantidad * precio_unitario)
     df = df.withColumn('total_venta', F.col('cantidad') * F.col('precio_unitario'))
     print("\n--- DataFrame con columna total_venta ---")
-    df.show(truncate=False, n=1000)  # Mostrar más filas
+    df.show(truncate=False, n=1000)  
 
-    # Calcular caja con más ventas y caja con menos ventas
+    # Calcula caja con más ventas y caja con menos ventas
     df_cajas = df.groupBy('numero_caja').agg(F.sum('total_venta').alias('total_vendido'))
     print("\n--- Total vendido por caja ---")
     df_cajas.show(truncate=False, n=1000)
 
-    # Ordenar por la columna de 'total_vendido' para obtener las métricas
+    # Ordena por la columna de 'total_vendido' para obtener las métricas
     caja_con_mas_ventas = df_cajas.orderBy(F.desc('total_vendido')).first()['numero_caja']
     caja_con_menos_ventas = df_cajas.orderBy('total_vendido').first()['numero_caja']
 
-    # Calcular percentiles
+    # Calcula los percentilesss
     percentil_25 = df_cajas.approxQuantile('total_vendido', [0.25], 0.01)[0]
     percentil_50 = df_cajas.approxQuantile('total_vendido', [0.50], 0.01)[0]
     percentil_75 = df_cajas.approxQuantile('total_vendido', [0.75], 0.01)[0]
@@ -112,7 +112,7 @@ def calcular_metricas(df):
 
 # Función para calcular métricas relacionadas a productos
 def calcular_productos(df):
-    # Calcular el producto más vendido por unidad
+    # Calcula el producto más vendido por unidad
     df_productos = df.groupBy('nombre').agg(F.sum('cantidad').alias('cantidad_total'))
     print("\n--- Cantidad total vendida por producto ---")
     df_productos.show(truncate=False, n=1000)
@@ -131,19 +131,19 @@ def calcular_productos(df):
 
 # Función para generar un DataFrame con métricas incluyendo la fecha
 def generar_dataframe_metricas_con_fecha(metricas_data, spark):
-    # Crear una lista de Rows a partir de los datos de métricas
+    # Crea una lista de rows a partir de los datos de métricas
     rows = []
     for metrica, valor, fecha in metricas_data:
-        # Asegurarse de que el valor sea del tipo correcto (string para métricas como 'leche')
+        # Asegura de que el valor sea del tipo correcto (string para métricas como 'leche' o cervezaaa)
         if isinstance(valor, (int, float)):
             valor = float(valor)
         else:
             valor = str(valor)
         rows.append(Row(metrica=metrica, valor=valor, fecha=fecha))
 
-    # Crear DataFrame a partir de las filas
+    # Crea DataFrame a partir de las filas
     df_metricas = spark.createDataFrame(rows)
     print("\n--- DataFrame de métricas con fecha ---")
-    df_metricas.show(truncate=False, n=1000)  # Mostrar el DataFrame completo
+    df_metricas.show(truncate=False, n=1000)  # Muestra el DataFrame completo
 
     return df_metricas
