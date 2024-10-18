@@ -22,7 +22,7 @@ def test_total_productos_multiples():
 
 # 2. Prueba sin productos (escenario vacío)
 def test_total_productos_sin_productos():
-    # Definir el esquema explícitamente para un DataFrame vacío
+    # Definimos el esquema para un DataFrame vacío
     schema = StructType([
         StructField("nombre_producto", StringType(), True),
         StructField("cantidad", IntegerType(), True)
