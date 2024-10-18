@@ -97,16 +97,18 @@ try:
             id SERIAL PRIMARY KEY,
             metrica VARCHAR(255),
             valor VARCHAR(255),
-            fecha VARCHAR(255)
+            fecha VARCHAR(255),
+            UNIQUE (metrica, fecha)
         )
     ''')
 
-    # Insertar los datos de las métricas en la tabla
+    # Insertar los datos de las métricas en la tabla, evitando duplicados
     for row in metricas_data:
-        cursor.execute(
-            "INSERT INTO metricas (metrica, valor, fecha) VALUES (%s, %s, %s) ON CONFLICT DO NOTHING",
-            (row[0], str(row[1]), row[2])
-        )
+        cursor.execute('''
+            INSERT INTO metricas (metrica, valor, fecha) 
+            VALUES (%s, %s, %s) 
+            ON CONFLICT (metrica, fecha) DO UPDATE SET valor = EXCLUDED.valor
+        ''', (row[0], str(row[1]), row[2]))
 
     # Confirmar los cambios
     conexion.commit()
