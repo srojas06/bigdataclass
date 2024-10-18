@@ -34,7 +34,7 @@ CREATE TABLE IF NOT EXISTS metricas (
     fecha DATE
 );
 
--- Insertar algunos datos iniciales (opcional)
+-- Insertar algunos datos iniciales
 INSERT INTO ventas_cajas (numero_caja, total_vendido, fecha) VALUES ('Caja 1', 50000.75, '2024-10-15') ON CONFLICT DO NOTHING;
 INSERT INTO productos_vendidos (nombre_producto, cantidad_total, fecha) VALUES ('Jugo', 120, '2024-10-15') ON CONFLICT DO NOTHING;
 INSERT INTO metricas (metrica, valor, fecha) VALUES ('caja_con_mas_ventas', 'Caja 1', '2024-10-15') ON CONFLICT DO NOTHING;
