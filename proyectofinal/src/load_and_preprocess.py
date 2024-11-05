@@ -11,8 +11,8 @@ if __name__ == "__main__":
     spark = iniciar_spark("MaterializePostgres")
 
     # Rutas de los archivos de datos
-    census_path = "data/acs2017_census_tract_data.csv"
-    crimes_path = "data/estimated_crimes_1979_2019.csv"
+    census_path = "/src/data/acs2017_census_tract_data.csv"
+    crimes_path = "/src/data/estimated_crimes_1979_2019.csv"
     
     # Cargar y preprocesar los datos
     census_df, crimes_df = load_data(spark, census_path, crimes_path)
