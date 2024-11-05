@@ -34,3 +34,14 @@ def preprocess_crimes_data(df):
     # Eliminar filas con valores nulos
     df = df.na.drop()
     return df
+def save_to_postgres(df, table_name, url, properties):
+    """
+    Guarda el DataFrame en una tabla PostgreSQL.
+    """
+    try:
+        df.write.jdbc(url=url, table=table_name, mode="overwrite", properties=properties)
+        print(f"Datos guardados en la tabla {table_name} con éxito.")
+    except Exception as e:
+        print(f"Error al guardar en la tabla {table_name}: {e}")
+
+
