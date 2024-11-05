@@ -1,6 +1,7 @@
 import unittest
 from pyspark.sql import SparkSession
-from src.funciones import iniciar_spark, load_data, preprocess_census_data, preprocess_crimes_data
+from funciones import iniciar_spark, load_data, preprocess_census_data, preprocess_crimes_data
+
 
 class DatosTests(unittest.TestCase):
 
