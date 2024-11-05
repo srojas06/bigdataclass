@@ -3,9 +3,12 @@ from pyspark.sql import functions as F
 
 def iniciar_spark(app_name="DataProcessing"):
     """
-    Inicia una sesión de Spark.
+    Inicia una sesión de Spark con el JAR para PostgreSQL.
     """
-    return SparkSession.builder.appName(app_name).getOrCreate()
+    return SparkSession.builder \
+        .appName(app_name) \
+        .config("spark.jars", "/src/postgresql-42.2.14.jar") \  # Ruta al conector JDBC de PostgreSQL
+        .getOrCreate()
 
 def load_data(spark, census_path, crimes_path):
     """
