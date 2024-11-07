@@ -1,6 +1,5 @@
 from pyspark.sql import SparkSession
 from pyspark.sql import functions as F
-import psycopg2
 
 def iniciar_spark():
     """
@@ -23,9 +22,6 @@ def preprocess_census_data(df):
     """
     Preprocesa el DataFrame del censo eliminando filas con valores nulos.
     """
-    print("Esquema del DataFrame de Censo:")
-    df.printSchema()  # Mostrar el esquema del DataFrame
-    df.show(truncate=False)  # Mostrar los datos para verificar estructuras
     return df.na.drop()
 
 def preprocess_crimes_data(df):
@@ -34,34 +30,19 @@ def preprocess_crimes_data(df):
     """
     if 'Year' in df.columns:
         df = df.drop("Year")
-    print("Esquema del DataFrame de Crímenes:")
-    df.printSchema()  # Mostrar el esquema del DataFrame
-    df.show(truncate=False)  # Mostrar los datos para verificar estructuras
     return df.na.drop()
-
-def clean_data(df):
-    """
-    Limpia el DataFrame para asegurarse de que no contiene diccionarios ni listas.
-    Convierte columnas no válidas a tipo string si es necesario.
-    """
-    for column in df.columns:
-        # Verificar si la columna contiene tipos no válidos
-        if df.select(column).dtypes[column] == 'struct':
-            df = df.withColumn(column, F.to_json(F.col(column)))  # Convertir struct a string
-        elif df.select(column).dtypes[column] == 'array':
-            df = df.withColumn(column, F.concat_ws(",", F.col(column)))  # Convertir array a string
-    return df
 
 def save_to_postgres(df, table_name, url, properties):
     """
     Guarda el DataFrame en una tabla PostgreSQL.
     """
+    print(f"Intentando guardar datos en PostgreSQL en la tabla '{table_name}'...")
+    print("Esquema del DataFrame:")
+    df.printSchema()  # Imprimir esquema del DataFrame
+    
     try:
-        # Limpiar los datos antes de guardar
-        df = clean_data(df)
-        print(f"Guardando datos en la tabla: {table_name}")
         df.write.jdbc(url=url, table=table_name, mode="overwrite", properties=properties)
-        print(f"Datos guardados en la tabla: {table_name}")
+        print(f"Datos guardados en la tabla '{table_name}' con éxito.")
     except Exception as e:
         print(f"Error al guardar datos en PostgreSQL: {e}")
 
