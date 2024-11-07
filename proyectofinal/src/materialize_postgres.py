@@ -65,12 +65,13 @@ def main():
     print("Datos preprocesados.")
 
     # Configuración de conexión PostgreSQL
-    url = "jdbc:postgresql://localhost:5432/bigdata_db"
+    url = "jdbc:postgresql://172.17.0.2:5432/bigdata_db"
     properties = {
         "user": "postgres",
         "password": "testPassword",
         "driver": "org.postgresql.Driver"
     }
+    
 
     # Guardar en PostgreSQL
     save_to_postgres(census_df, "census_data", url, properties)
