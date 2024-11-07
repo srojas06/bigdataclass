@@ -1,5 +1,6 @@
 from pyspark.sql import SparkSession
-from pyspark.sql import functions as F
+import psycopg2
+import sys
 
 def iniciar_spark():
     """
@@ -18,28 +19,42 @@ def load_data(spark, census_path, crimes_path):
     crimes_df = spark.read.csv(crimes_path, header=True, inferSchema=True)
     return census_df, crimes_df
 
-def preprocess_census_data(df):
-    """
-    Preprocesa el DataFrame del censo eliminando filas con valores nulos.
-    """
-    return df.na.drop()
-
-def preprocess_crimes_data(df):
-    """
-    Preprocesa el DataFrame de crímenes eliminando la columna 'Year' y filas con valores nulos.
-    """
-    if 'Year' in df.columns:
-        df = df.drop("Year")
-    return df.na.drop()
-
-def save_to_postgres(df, table_name, url, properties):
+def save_to_postgres(df, table_name, connection_params):
     """
     Guarda el DataFrame en una tabla PostgreSQL.
     """
-    df.write.jdbc(url=url, table=table_name, mode="overwrite", properties=properties)
+    try:
+        conn = psycopg2.connect(**connection_params)
+        print("Conexión exitosa a PostgreSQL")
+        cursor = conn.cursor()
+        
+        # Crea la tabla si no existe
+        cursor.execute(f'''
+            CREATE TABLE IF NOT EXISTS {table_name} (
+                id SERIAL PRIMARY KEY,
+                data JSONB
+            )
+        ''')
+
+        # Insertar los datos de DataFrame a PostgreSQL
+        for row in df.collect():
+            cursor.execute(f'''
+                INSERT INTO {table_name} (data) VALUES (%s)
+            ''', (row.asDict(),))
+
+        conn.commit()
+        print(f"Datos guardados en la tabla {table_name}.")
+
+    except Exception as e:
+        print(f"Error al guardar datos en PostgreSQL: {e}")
+    finally:
+        if conn:
+            cursor.close()
+            conn.close()
+            print("Conexión a PostgreSQL cerrada")
 
 def main():
-    # Inicializar Spark y cargar datos
+    # Inicializar Spark
     spark = iniciar_spark()
     print("Sesión de Spark iniciada.")
 
@@ -51,30 +66,17 @@ def main():
     census_df, crimes_df = load_data(spark, census_path, crimes_path)
     print("Datos cargados.")
 
-    # Preprocesar los datos
-    census_df = preprocess_census_data(census_df)
-    crimes_df = preprocess_crimes_data(crimes_df)
-    print("Datos preprocesados.")
-
-    # Configuración de conexión PostgreSQL
-    url = "jdbc:postgresql://localhost:5432/bigdata_db"
-    properties = {
+    # Parámetros de conexión a PostgreSQL
+    connection_params = {
+        "host": "172.17.0.2",  # IP del contenedor de PostgreSQL
+        "database": "bigdata_db",
         "user": "postgres",
-        "password": "testPassword",
-        "driver": "org.postgresql.Driver"
+        "password": "testPassword"
     }
 
-    # Guardar en PostgreSQL
-    save_to_postgres(census_df, "census_data", url, properties)
-    print("Datos del censo guardados en PostgreSQL.")
-
-    save_to_postgres(crimes_df, "crimes_data", url, properties)
-    print("Datos de crímenes guardados en PostgreSQL.")
-
-    # Realizar el cruce de datos (ejemplo de cruce simple)
-    crossed_df = census_df.join(crimes_df, census_df["State"] == crimes_df["state_name"], "inner")
-    save_to_postgres(crossed_df, "crossed_data", url, properties)
-    print("Datos cruzados guardados en PostgreSQL.")
+    # Guardar DataFrames en PostgreSQL
+    save_to_postgres(census_df, "census_data", connection_params)
+    save_to_postgres(crimes_df, "crimes_data", connection_params)
 
     # Finalizar Spark
     spark.stop()
