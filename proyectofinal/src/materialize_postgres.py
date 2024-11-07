@@ -16,6 +16,11 @@ def load_data(spark, census_path, crimes_path):
     """
     census_df = spark.read.csv(census_path, header=True, inferSchema=True)
     crimes_df = spark.read.csv(crimes_path, header=True, inferSchema=True)
+    
+    # Eliminar la columna 'year' durante la carga de datos
+    if 'year' in crimes_df.columns:
+        crimes_df = crimes_df.drop("year")
+        
     return census_df, crimes_df
 
 def preprocess_census_data(df):
@@ -31,11 +36,8 @@ def preprocess_census_data(df):
 
 def preprocess_crimes_data(df):
     """
-    Preprocesa el DataFrame de crímenes eliminando la columna 'Year' y realizando imputaciones en valores nulos.
+    Preprocesa el DataFrame de crímenes realizando imputaciones en valores nulos.
     """
-    if 'Year' in df.columns:
-        df = df.drop("Year")
-    
     # Imputación de valores nulos (ejemplo: se llenan con la media de la columna)
     for column in df.columns:
         if df.select(column).dtypes[0] in ['double', 'float']:
@@ -49,7 +51,7 @@ def save_to_postgres(df, table_name, url, properties):
     """
     print(f"Intentando guardar datos en PostgreSQL en la tabla '{table_name}'...")
     print("Esquema del DataFrame:")
-    df.printSchema()  # Imprimir esquema del DataFrame
+    df.printSchema()  # Imprime esquema del DataFrame
     
     try:
         df.write.jdbc(url=url, table=table_name, mode="overwrite", properties=properties)
