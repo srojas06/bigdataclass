@@ -20,17 +20,28 @@ def load_data(spark, census_path, crimes_path):
 
 def preprocess_census_data(df):
     """
-    Preprocesa el DataFrame del censo eliminando filas con valores nulos.
+    Preprocesa el DataFrame del censo realizando imputaciones en valores nulos.
     """
-    return df.na.drop()
+    # Imputación de valores nulos (ejemplo: se llenan con la media de la columna)
+    for column in df.columns:
+        if df.select(column).dtypes[0] in ['double', 'float']:
+            mean_value = df.select(F.mean(column)).collect()[0][0]
+            df = df.fillna({column: mean_value})
+    return df
 
 def preprocess_crimes_data(df):
     """
-    Preprocesa el DataFrame de crímenes eliminando la columna 'Year' y filas con valores nulos.
+    Preprocesa el DataFrame de crímenes eliminando la columna 'Year' y realizando imputaciones en valores nulos.
     """
     if 'Year' in df.columns:
         df = df.drop("Year")
-    return df.na.drop()
+    
+    # Imputación de valores nulos (ejemplo: se llenan con la media de la columna)
+    for column in df.columns:
+        if df.select(column).dtypes[0] in ['double', 'float']:
+            mean_value = df.select(F.mean(column)).collect()[0][0]
+            df = df.fillna({column: mean_value})
+    return df
 
 def save_to_postgres(df, table_name, url, properties):
     """
@@ -72,12 +83,11 @@ def main():
         "driver": "org.postgresql.Driver"
     }
     
-
     # Guardar en PostgreSQL
     save_to_postgres(census_df, "census_data", url, properties)
     save_to_postgres(crimes_df, "crimes_data", url, properties)
 
-    # Realizar el cruce de datos (ejemplo de cruce simple)
+    # Realizar el cruce de datos usando la columna 'State' y 'state_name'
     crossed_df = census_df.join(crimes_df, census_df["State"] == crimes_df["state_name"], "inner")
     save_to_postgres(crossed_df, "crossed_data", url, properties)
 
