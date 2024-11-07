@@ -57,7 +57,7 @@ def main():
     print("Datos preprocesados.")
 
     # Configuración de conexión PostgreSQL
-    url = "jdbc:postgresql://localhost:5433/bigdata_db"
+    url = "jdbc:postgresql://bigdata-db:5432/bigdata_db"  # Cambia aquí
     properties = {
         "user": "postgres",
         "password": "testPassword",
